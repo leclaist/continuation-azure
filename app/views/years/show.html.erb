@@ -1,6 +1,6 @@
 <% content_for :theme_year, @year.to_s %>
 
-<%= link_to "← All years", root_path, class: "back-link" %>
+<%= link_to "←", root_path, class: "back-link" %>
 
 <h1><%= @year %></h1>
 <% if (name = theme_name(@year)) %>
