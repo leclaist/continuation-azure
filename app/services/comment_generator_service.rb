@@ -61,6 +61,7 @@ class CommentGeneratorService
     )
 
     text = response.content.find { |b| b.type == :text }&.text || "[]"
+    text = text.gsub(/\A```(?:json)?\s*|\s*```\z/, "").strip
     JSON.parse(text)
   rescue JSON::ParserError, Anthropic::Error => e
     Rails.logger.error("CommentGeneratorService error: #{e.message}")
