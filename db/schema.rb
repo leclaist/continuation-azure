@@ -10,12 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_09_092111) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_09_200616) do
   create_table "generated_comments", force: :cascade do |t|
     t.text "comments_json"
     t.datetime "created_at", null: false
     t.string "file_id"
     t.datetime "updated_at", null: false
     t.integer "year"
+  end
+
+  create_table "visitor_counters", force: :cascade do |t|
+    t.integer "count"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 end
