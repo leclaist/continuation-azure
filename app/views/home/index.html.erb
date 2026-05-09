@@ -1,0 +1,7 @@
+<h1>Entries</h1>
+
+<ul>
+  <% @years.each do |year| %>
+    <li><%= link_to year, year_path(year: year) %></li>
+  <% end %>
+</ul>

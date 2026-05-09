@@ -1,0 +1,9 @@
+<%= link_to '← All years', root_path %>
+
+<h1><%= @year %></h1>
+
+<ul>
+  <% @entries.each do |entry| %>
+    <li><%= link_to entry.name, entry_path(year: @year, slug: entry.slug) %></li>
+  <% end %>
+</ul>

@@ -1,0 +1,23 @@
+# Environment files
+.env*
+!.env.example
+
+# Bundler
+/.bundle
+
+# Logs and temp files
+log/*
+tmp/*
+!log/.keep
+!tmp/.keep
+
+# Uploaded files (local dev storage)
+storage/*
+!storage/.keep
+
+# Credentials
+config/master.key
+config/credentials/*.key
+
+# macOS
+.DS_Store
