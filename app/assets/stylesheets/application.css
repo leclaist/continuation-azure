@@ -162,24 +162,28 @@ a:hover {
   border-bottom: none;
 }
 
-/* 2008 ad — classic web banner, authentically bad */
-.banner-ad--2008 .banner-ad__link {
-  background: #FFD700;
-  border: 3px solid #FF0000;
-  outline: 2px dashed #FF0000;
-  outline-offset: 2px;
-  padding: 0.6rem 1rem;
-  text-align: center;
-  animation: banner-flash 1.2s step-start infinite;
-}
-
+/* shared 2008 ad base */
 .banner-ad--2008 .banner-ad__inner {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
 }
 
-.banner-ad--2008 .banner-ad__name {
+.banner-ad--2008 .banner-ad__link {
+  display: block;
+  padding: 0.6rem 1rem;
+  text-align: center;
+}
+
+/* --- variant: flash (Leapin' Larry's) --- */
+.banner-ad--flash .banner-ad__link {
+  background: #FFD700;
+  border: 3px solid #FF0000;
+  outline: 2px dashed #FF0000;
+  outline-offset: 2px;
+  animation: banner-flash 1.2s step-start infinite;
+}
+.banner-ad--flash .banner-ad__name {
   font-family: Impact, "Arial Black", sans-serif;
   font-size: 1.6rem;
   color: #CC0000;
@@ -187,21 +191,18 @@ a:hover {
   letter-spacing: 0.05em;
   text-shadow: 2px 2px 0 #000;
 }
-
-.banner-ad--2008 .banner-ad__tagline {
+.banner-ad--flash .banner-ad__tagline {
   font-family: "Comic Sans MS", "Chalkboard SE", cursive;
   font-size: 0.9rem;
   color: #000080;
   font-weight: bold;
 }
-
-.banner-ad--2008 .banner-ad__subline {
+.banner-ad--flash .banner-ad__subline {
   font-family: "Comic Sans MS", "Chalkboard SE", cursive;
   font-size: 0.75rem;
   color: #333;
 }
-
-.banner-ad--2008 .banner-ad__cta {
+.banner-ad--flash .banner-ad__cta {
   display: inline-block;
   margin-top: 0.3rem;
   background: #FF0000;
@@ -213,6 +214,186 @@ a:hover {
   animation: cta-pulse 0.6s step-start infinite;
 }
 
+/* --- variant: resort --- */
+.banner-ad--resort .banner-ad__link {
+  background: linear-gradient(180deg, #003366 0%, #0055A4 50%, #003366 100%);
+  border: 2px solid #7EB6E8;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--resort .banner-ad__name {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.3rem;
+  color: #FFD700;
+  text-shadow: 1px 1px 2px #000;
+  font-style: italic;
+}
+.banner-ad--resort .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.85rem;
+  color: #B8D8F0;
+  font-weight: bold;
+}
+.banner-ad--resort .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.72rem;
+  color: #90B8D8;
+}
+.banner-ad--resort .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: #FFD700;
+  color: #003366;
+  font-family: Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 0.2rem 0.8rem;
+  border: 1px solid #003366;
+}
+
+/* --- variant: diner --- */
+.banner-ad--diner .banner-ad__link {
+  background: #FFF8E7;
+  border: 3px double #CC0000;
+  outline: 2px solid #CC0000;
+  outline-offset: 3px;
+}
+.banner-ad--diner .banner-ad__name {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.4rem;
+  color: #CC0000;
+  font-style: italic;
+  text-shadow: 1px 1px 0 #FFD700;
+}
+.banner-ad--diner .banner-ad__tagline {
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 0.88rem;
+  color: #5A3010;
+}
+.banner-ad--diner .banner-ad__subline {
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 0.72rem;
+  color: #7A5030;
+}
+.banner-ad--diner .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-family: "Times New Roman", serif;
+  font-size: 1rem;
+  color: #CC0000;
+  font-style: italic;
+}
+
+/* --- variant: sports --- */
+.banner-ad--sports .banner-ad__link {
+  background: #1A1A2E;
+  border: 3px solid #FF6600;
+  padding: 0.65rem 1rem;
+}
+.banner-ad--sports .banner-ad__name {
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 1.5rem;
+  color: #FF6600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-shadow: 2px 2px 0 #000;
+}
+.banner-ad--sports .banner-ad__tagline {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.82rem;
+  color: #CCC;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.banner-ad--sports .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.72rem;
+  color: #999;
+}
+.banner-ad--sports .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: #FF6600;
+  color: #FFF;
+  font-family: Impact, sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.8rem;
+  animation: cta-pulse-sports 0.8s step-start infinite;
+}
+
+/* --- variant: outdoors --- */
+.banner-ad--outdoors .banner-ad__link {
+  background: #2B4A1C;
+  border: 2px solid #8B6914;
+  outline: 1px dashed #8B6914;
+  outline-offset: 2px;
+  padding: 0.65rem 1rem;
+}
+.banner-ad--outdoors .banner-ad__name {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.35rem;
+  color: #FFD700;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px #000;
+}
+.banner-ad--outdoors .banner-ad__tagline {
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 0.85rem;
+  color: #C8E68C;
+}
+.banner-ad--outdoors .banner-ad__subline {
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+  font-size: 0.72rem;
+  color: #8AAA5C;
+}
+.banner-ad--outdoors .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.3rem;
+  background: #8B6914;
+  color: #FFF8DC;
+  font-family: Impact, sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.8rem;
+}
+
+/* --- variant: hardware --- */
+.banner-ad--hardware .banner-ad__link {
+  background: #F5F0E8;
+  border: 2px solid #555;
+  border-top: 4px solid #CC0000;
+  padding: 0.65rem 1rem;
+}
+.banner-ad--hardware .banner-ad__name {
+  font-family: "Arial Black", Arial, sans-serif;
+  font-size: 1.2rem;
+  color: #222;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.banner-ad--hardware .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #555;
+  font-style: italic;
+}
+.banner-ad--hardware .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.72rem;
+  color: #888;
+}
+.banner-ad--hardware .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.3rem;
+  background: #CC0000;
+  color: #FFF;
+  font-family: "Arial Black", sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.75rem;
+}
+
 @keyframes banner-flash {
   0%, 100% { background: #FFD700; border-color: #FF0000; }
   50%       { background: #FF6600; border-color: #FFD700; }
@@ -221,6 +402,11 @@ a:hover {
 @keyframes cta-pulse {
   0%, 100% { background: #FF0000; color: #FFD700; }
   50%       { background: #FFD700; color: #FF0000; }
+}
+
+@keyframes cta-pulse-sports {
+  0%, 100% { background: #FF6600; color: #FFF; }
+  50%       { background: #FFF; color: #FF6600; }
 }
 
 /* ------------------------------------------------------------------ */
