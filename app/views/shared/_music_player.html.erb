@@ -3,13 +3,8 @@
 <% if playlist %>
   <div class="music-player music-player--<%= year %>">
     <div class="music-player__label">now playing</div>
-    <iframe
-      class="music-player__frame"
-      src="https://www.youtube.com/embed/videoseries?list=<%= playlist['playlist_id'] %>&autoplay=0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen
-      loading="lazy"
-      title="Music for <%= year %>">
-    </iframe>
+    <div class="music-player__frame"
+         data-yt-playlist="<%= playlist['playlist_id'] %>">
+    </div>
   </div>
 <% end %>
