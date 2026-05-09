@@ -1,8 +1,13 @@
-<%= link_to '← All years', root_path %>
+<% content_for :theme_year, @year.to_s %>
+
+<%= link_to "← All years", root_path, class: "back-link" %>
 
 <h1><%= @year %></h1>
+<% if (name = theme_name(@year)) %>
+  <div class="year-badge"><%= name %></div>
+<% end %>
 
-<ul>
+<ul class="entry-list">
   <% @entries.each do |entry| %>
     <li><%= link_to entry.name, entry_path(year: @year, slug: entry.slug) %></li>
   <% end %>

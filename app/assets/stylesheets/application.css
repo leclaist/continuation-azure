@@ -1,10 +1,198 @@
-/*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
- */
+:root {
+  --color-bg:      #FAFAF8;
+  --color-surface: #FFFFFF;
+  --color-text:    #1A1A1A;
+  --color-accent:  #555555;
+  --color-heading: #111111;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+}
+
+/* typography */
+
+h1 {
+  font-size: 2.2rem;
+  font-weight: normal;
+  color: var(--color-heading);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+  font-weight: normal;
+  color: var(--color-heading);
+  margin-bottom: 1.5rem;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+/* nav */
+
+.back-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 2.5rem;
+  opacity: 0.7;
+}
+
+.back-link:hover { opacity: 1; }
+
+/* year badge */
+
+.year-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  padding: 0.15rem 0.6rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+/* home: year list */
+
+.year-list {
+  list-style: none;
+  margin-top: 2rem;
+}
+
+.year-list li {
+  border-top: 1px solid var(--color-accent);
+  opacity: 0.15;
+}
+
+.year-list li:last-child { border-bottom: 1px solid var(--color-accent); opacity: 0.15; }
+
+.year-list a {
+  display: block;
+  padding: 0.9rem 0;
+  font-size: 1.4rem;
+  border-bottom: none;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.year-list a:hover { color: var(--color-accent); }
+
+/* entry list */
+
+.entry-list {
+  list-style: none;
+  margin-top: 1.5rem;
+}
+
+.entry-list li + li { border-top: 1px solid color-mix(in srgb, var(--color-accent) 20%, transparent); }
+
+.entry-list a {
+  display: block;
+  padding: 0.75rem 0;
+  border-bottom: none;
+}
+
+.entry-list a:hover { padding-left: 0.4rem; transition: padding 0.15s ease; }
+
+/* doc content */
+
+.doc-content {
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-accent);
+  padding: 2rem 2rem 2rem 1.75rem;
+  margin-top: 2rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.doc-content p { margin-bottom: 1.25rem; }
+.doc-content p:last-child { margin-bottom: 0; }
+.doc-content h1, .doc-content h2, .doc-content h3 {
+  color: var(--color-heading);
+  margin: 1.5rem 0 0.5rem;
+}
+.doc-content ul, .doc-content ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.doc-content li { margin-bottom: 0.25rem; }
+
+/* ------------------------------------------------------------------ */
+/* 2008 — MySpace / emo theme                                          */
+/* ------------------------------------------------------------------ */
+
+[data-year="2008"] {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(255, 20, 147, 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(147, 0, 211, 0.07) 0%, transparent 60%);
+}
+
+[data-year="2008"] h1 {
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 2.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 20, 147, 0.6), 0 0 30px rgba(255, 20, 147, 0.2);
+}
+
+[data-year="2008"] .year-badge {
+  font-family: "Courier New", monospace;
+  border-color: #FF1493;
+  color: #FF1493;
+  text-shadow: 0 0 6px rgba(255, 20, 147, 0.5);
+  box-shadow: 0 0 8px rgba(255, 20, 147, 0.2);
+}
+
+[data-year="2008"] a {
+  text-shadow: 0 0 8px rgba(255, 20, 147, 0.4);
+}
+
+[data-year="2008"] a:hover {
+  text-shadow: 0 0 14px rgba(255, 20, 147, 0.8);
+}
+
+[data-year="2008"] .back-link::before { content: "« "; }
+
+[data-year="2008"] .entry-list a::before {
+  content: "★ ";
+  color: #9B30FF;
+}
+
+[data-year="2008"] .doc-content {
+  border-left: 3px solid #FF1493;
+  box-shadow: 0 0 20px rgba(255, 20, 147, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.3);
+  background: #13131A;
+}
+
+[data-year="2008"] .doc-content p {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.95rem;
+}
+
+[data-year="2008"] .doc-content,
+[data-year="2008"] .doc-content * {
+  color: #E0D0E8 !important;
+}

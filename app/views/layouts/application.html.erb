@@ -21,9 +21,14 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+    <% if (year = content_for(:theme_year)).present? %>
+      <style><%= theme_css_variables(year) %></style>
+    <% end %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body data-year="<%= content_for(:theme_year) %>">
+    <div class="page">
+      <%= yield %>
+    </div>
   </body>
 </html>
