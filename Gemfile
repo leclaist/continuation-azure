@@ -42,6 +42,8 @@ gem "image_processing", "~> 1.2"
 
 gem "google-apis-drive_v3"
 gem "googleauth"
+gem "anthropic"
+gem "nokogiri"
 
 group :development, :test do
   gem "dotenv-rails"

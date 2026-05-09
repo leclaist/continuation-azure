@@ -9,3 +9,15 @@
 <div class="doc-content">
   <%= raw @content %>
 </div>
+
+<% if @comments.any? %>
+  <div class="comments-section">
+    <h3 class="comments-heading">Comments (<%= @comments.size %>)</h3>
+    <% @comments.each do |comment| %>
+      <div class="comment">
+        <span class="comment__username"><%= comment['username'] %></span>
+        <p class="comment__body"><%= comment['body'] %></p>
+      </div>
+    <% end %>
+  </div>
+<% end %>

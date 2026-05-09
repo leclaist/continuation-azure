@@ -224,6 +224,84 @@ a:hover {
 }
 
 /* ------------------------------------------------------------------ */
+/* Comments                                                            */
+/* ------------------------------------------------------------------ */
+
+.comments-section {
+  margin-top: 2.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  padding-top: 1.5rem;
+}
+
+.comments-heading {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 1.25rem;
+  opacity: 0.7;
+}
+
+.comment {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.comment__username {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--color-accent);
+  margin-bottom: 0.2rem;
+}
+
+.comment__body {
+  font-size: 0.92rem;
+  color: var(--color-text);
+  opacity: 0.85;
+  margin: 0;
+}
+
+/* 2008 comments — MySpace bulletin board style */
+[data-year="2008"] .comments-section {
+  border-top-color: rgba(255, 20, 147, 0.25);
+}
+
+[data-year="2008"] .comments-heading {
+  font-family: "Courier New", monospace;
+  color: #9B30FF;
+  opacity: 1;
+  text-shadow: 0 0 6px rgba(155, 48, 255, 0.4);
+}
+
+[data-year="2008"] .comment {
+  background: rgba(255, 20, 147, 0.04);
+  border: 1px solid rgba(255, 20, 147, 0.12);
+  border-radius: 2px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-year="2008"] .comment__username {
+  font-family: "Courier New", monospace;
+  color: #FF1493;
+  text-shadow: 0 0 8px rgba(255, 20, 147, 0.5);
+  font-size: 0.85rem;
+}
+
+[data-year="2008"] .comment__body {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.88rem;
+  color: #C8B8D8;
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ */
 /* 2008 — MySpace / emo theme                                          */
 /* ------------------------------------------------------------------ */
 

@@ -8,5 +8,15 @@ class EntriesController < ApplicationController
 
     @title = entry.name
     @content = service.content_html(entry.id)
+
+    if ENV['ANTHROPIC_API_KEY'].present?
+      @comments = CommentGeneratorService.new.comments_for(
+        file_id: entry.id,
+        year: @year,
+        content_html: @content
+      )
+    else
+      @comments = []
+    end
   end
 end
