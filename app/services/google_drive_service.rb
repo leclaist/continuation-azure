@@ -1,22 +1,22 @@
-require 'google/apis/drive_v3'
-require 'googleauth'
-require 'nokogiri'
+require "google/apis/drive_v3"
+require "googleauth"
+require "nokogiri"
 
 class GoogleDriveService
-  FOLDER_ID = ENV['GOOGLE_DRIVE_FOLDER_ID']
+  FOLDER_ID = ENV["GOOGLE_DRIVE_FOLDER_ID"]
   SCOPE = Google::Apis::DriveV3::AUTH_DRIVE_READONLY
 
   def initialize
     @drive = Google::Apis::DriveV3::DriveService.new
     @drive.authorization = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: StringIO.new(ENV['GOOGLE_SERVICE_ACCOUNT_JSON']),
+      json_key_io: StringIO.new(ENV["GOOGLE_SERVICE_ACCOUNT_JSON"]),
       scope: SCOPE
     )
   end
 
   # { 2008 => [Entry, ...], 2009 => [...] }
   def files_by_year
-    Rails.cache.fetch('drive/files_by_year', expires_in: 1.hour) do
+    Rails.cache.fetch("drive/files_by_year", expires_in: 1.hour) do
       list_files
         .filter_map { |f| build_entry(f) }
         .group_by(&:year)
@@ -35,7 +35,7 @@ class GoogleDriveService
   def content_html(file_id)
     Rails.cache.fetch("drive/file/#{file_id}", expires_in: 1.hour) do
       io = StringIO.new
-      @drive.export_file(file_id, 'text/html', download_dest: io)
+      @drive.export_file(file_id, "text/html", download_dest: io)
       extract_body(io.string)
     end
   end
@@ -47,7 +47,7 @@ class GoogleDriveService
   end
 
   def self.to_slug(date)
-    date.strftime('%b-%d-%Y').downcase
+    date.strftime("%b-%d-%Y").downcase
   end
 
   private
@@ -70,13 +70,13 @@ class GoogleDriveService
   def list_files
     result = @drive.list_files(
       q: "'#{FOLDER_ID}' in parents and trashed = false",
-      fields: 'files(id, name)',
+      fields: "files(id, name)",
       page_size: 1000
     )
     result.files || []
   end
 
   def extract_body(html)
-    Nokogiri::HTML(html).at('body')&.inner_html || html
+    Nokogiri::HTML(html).at("body")&.inner_html || html
   end
 end

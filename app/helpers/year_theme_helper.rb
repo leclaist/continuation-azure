@@ -19,7 +19,7 @@ module YearThemeHelper
     2022 => { name: "Very Peri",              bg: "#F5F5FF", surface: "#FFFFFF", text: "#1A1A3A", accent: "#6667AB", heading: "#4040A0" },
     2023 => { name: "Viva Magenta",           bg: "#FAF0F3", surface: "#FFFFFF", text: "#3A001A", accent: "#BB2649", heading: "#8A1A35" },
     2024 => { name: "Peach Fuzz",             bg: "#FFF8F5", surface: "#FFFFFF", text: "#3A2010", accent: "#C87840", heading: "#A05828" },
-    2025 => { name: "Mocha Mousse",           bg: "#FAF5F0", surface: "#FFFFFF", text: "#2A1E10", accent: "#A47864", heading: "#7A5545" },
+    2025 => { name: "Mocha Mousse",           bg: "#FAF5F0", surface: "#FFFFFF", text: "#2A1E10", accent: "#A47864", heading: "#7A5545" }
   }.freeze
 
   DEFAULT_THEME = { bg: "#FAFAF8", surface: "#FFFFFF", text: "#1A1A1A", accent: "#555555", heading: "#111111" }.freeze
