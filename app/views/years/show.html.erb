@@ -7,6 +7,8 @@
   <div class="year-badge"><%= name %></div>
 <% end %>
 
+<%= render 'shared/banner_ad', year: @year %>
+
 <ul class="entry-list">
   <% @entries.each do |entry| %>
     <li><%= link_to entry.name, entry_path(year: @year, slug: entry.slug) %></li>

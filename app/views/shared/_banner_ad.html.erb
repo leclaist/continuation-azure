@@ -1,0 +1,14 @@
+<% ads = YAML.load_file(Rails.root.join('config/banner_ads.yml')) %>
+<% ad = ads[year.to_i] %>
+<% if ad %>
+  <div class="banner-ad banner-ad--<%= year %>">
+    <a href="<%= ad['url'] %>" class="banner-ad__link">
+      <div class="banner-ad__inner">
+        <span class="banner-ad__name"><%= ad['business'] %></span>
+        <span class="banner-ad__tagline"><%= ad['tagline'] %></span>
+        <span class="banner-ad__subline"><%= ad['subline'] %></span>
+        <span class="banner-ad__cta"><%= ad['cta'] %></span>
+      </div>
+    </a>
+  </div>
+<% end %>
