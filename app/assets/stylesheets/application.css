@@ -426,3 +426,55 @@ a:hover {
   color: #FFFFFF;
   border-bottom: none;
 }
+
+/* ------------------------------------------------------------------ */
+/* Responsive — tablet & mobile                                        */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 600px) {
+  body { font-size: 1rem; line-height: 1.65; }
+
+  .page { padding: 2rem 1.1rem 3.5rem; }
+
+  h1 { font-size: 1.7rem; }
+  h2 { font-size: 1.15rem; }
+
+  .back-link {
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: 1.3rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .year-list a { font-size: 1.2rem; padding: 1rem 0; }
+
+  .entry-list a { padding: 1rem 0; font-size: 1rem; }
+
+  .doc-content { padding: 1.25rem 1rem 1.25rem 0.9rem; }
+
+  .home-marquee { font-size: 0.95rem; }
+
+  [data-page="home"] h1 { font-size: 1.9rem; }
+
+  [data-page="home"] .page {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+    justify-content: flex-start;
+  }
+
+  [data-year="2008"] h1 { font-size: 2rem; }
+
+  .banner-ad--2008 .banner-ad__name { font-size: 1.3rem; }
+  .banner-ad--2008 .banner-ad__tagline { font-size: 0.8rem; }
+  .banner-ad--2008 .banner-ad__cta { font-size: 0.9rem; }
+
+  .comments-heading { font-size: 0.8rem; }
+  .comment__body { font-size: 0.88rem; }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .page { padding: 2.5rem 2rem 4rem; }
+  h1 { font-size: 1.95rem; }
+  [data-page="home"] h1 { font-size: 2.1rem; }
+  [data-year="2008"] h1 { font-size: 2.2rem; }
+}
