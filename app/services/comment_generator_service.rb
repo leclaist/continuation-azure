@@ -26,11 +26,13 @@ class CommentGeneratorService
     return cached.comments if cached
 
     comments = generate(year: year, content_html: content_html)
-    GeneratedComment.create!(
-      file_id: file_id,
-      year: year,
-      comments_json: comments.to_json
-    )
+    if comments.any?
+      GeneratedComment.create!(
+        file_id: file_id,
+        year: year,
+        comments_json: comments.to_json
+      )
+    end
     comments
   end
 
