@@ -40,6 +40,15 @@ class GoogleDriveService
     end
   end
 
+  def total_word_count
+    Rails.cache.fetch("drive/total_word_count", expires_in: 6.hours) do
+      files_by_year.values.flatten.sum do |entry|
+        html = content_html(entry.id)
+        Nokogiri::HTML(html).text.scan(/\S+/).size
+      end
+    end
+  end
+
   def self.parse_date(name)
     Date.parse(name)
   rescue ArgumentError, TypeError

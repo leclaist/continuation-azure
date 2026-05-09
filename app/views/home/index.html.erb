@@ -18,7 +18,13 @@
   </ul>
 </div>
 
-<div class="visitor-counter">
-  <span class="visitor-counter__label">visitors</span>
-  <span class="visitor-counter__digits"><%= @visitor_count.to_s.rjust(6, '0') %></span>
+<div class="home-stats">
+  <div class="visitor-counter">
+    <span class="visitor-counter__label">visitors</span>
+    <span class="visitor-counter__digits"><%= @visitor_count.to_s.rjust(6, "0") %></span>
+  </div>
+  <div class="visitor-counter">
+    <span class="visitor-counter__label">words written</span>
+    <span class="visitor-counter__digits"><%= number_with_delimiter(@word_count) %></span>
+  </div>
 </div>

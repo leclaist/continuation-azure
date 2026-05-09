@@ -584,8 +584,14 @@ a:hover {
 /* Visitor counter                                                     */
 /* ------------------------------------------------------------------ */
 
-.visitor-counter {
+.home-stats {
   margin-top: 2.5rem;
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.visitor-counter {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
