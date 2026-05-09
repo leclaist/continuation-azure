@@ -3,7 +3,7 @@ module YearThemeHelper
   # Each theme: bg, surface, text, accent, heading
   THEMES = {
     2008 => { name: nil,                         bg: "#0A0A0F", surface: "#13131A", text: "#E0D0E8", accent: "#FF1493", heading: "#FF69B4" },
-    2009 => { name: "Mimosa",                 bg: "#FFFBF0", surface: "#FFFFFF", text: "#3A2E00", accent: "#C8960C", heading: "#8A6800" },
+    2009 => { name: nil,                         bg: "#03020D", surface: "#0A0720", text: "#D8C8FF", accent: "#A855F7", heading: "#F0ABFF" },
     2010 => { name: "Turquoise",              bg: "#F0FAFA", surface: "#FFFFFF", text: "#0D2E2E", accent: "#2A9D8F", heading: "#1A6B65" },
     2011 => { name: "Honeysuckle",            bg: "#FFF5F7", surface: "#FFFFFF", text: "#3A001A", accent: "#D94F70", heading: "#A0304E" },
     2012 => { name: "Tangerine Tango",        bg: "#FFF8F5", surface: "#FFFFFF", text: "#3A1000", accent: "#DD4132", heading: "#A02A1F" },

@@ -1,3 +1,53 @@
+2009:
+  - business: "Leapin' Larry's"
+    tagline: "NOW WITH A WEBSITE!! Gas • Bait • Cold Beer"
+    cta: "Visit Our New Site!"
+    subline: "Still on Hwy 11. Still can't miss us."
+    url: "#"
+    variant: "glossy"
+
+  - business: "Lake of the Woods Walleye Charters"
+    tagline: "Book Online Now! Trophy Walleye Since 1987"
+    cta: "» Reserve Your Spot Today «"
+    subline: "New for 2009: Online booking! Call Bob: 218-555-0147"
+    url: "#"
+    variant: "web2blue"
+
+  - business: "Northwoods Ice Fishing Co."
+    tagline: "Heated Wheelhouses • Guide Service • Ice Reports"
+    cta: "CHECK ICE CONDITIONS"
+    subline: "Updated daily at NorthwoodsIce.com • Season starts Dec 1"
+    url: "#"
+    variant: "ice"
+
+  - business: "BorderLine Sports"
+    tagline: "Snowmobiles • ATVs • Now Carrying Arctic Cat!"
+    cta: "★ See Our 2009 Inventory ★"
+    subline: "Follow us on MySpace! Hwy 11 at the edge of town"
+    url: "#"
+    variant: "glossy-orange"
+
+  - business: "The Walleye Inn"
+    tagline: "Clean Rooms • Free WiFi • Fish Cleaning Station"
+    cta: "[ Book a Room ]"
+    subline: "Downtown Baudette • Pet Friendly • From $59/night"
+    url: "#"
+    variant: "web2blue"
+
+  - business: "Norma Jean's Café"
+    tagline: "Home Cookin' • Now Serving Espresso!"
+    cta: "♥ See Our New Menu ♥"
+    subline: "Open 5am–9pm • Find us on Facebook!"
+    url: "#"
+    variant: "warm09"
+
+  - business: "Lake Country Realty"
+    tagline: "Cabins • Lakeshore Lots • Hunting Land"
+    cta: "Search Listings Online »"
+    subline: "Now with virtual tours! LakeCountryMN.com"
+    url: "#"
+    variant: "realty"
+
 2008:
   - business: "Leapin' Larry's"
     tagline: "Gas • Bait • Cold Beer • Live Worms"

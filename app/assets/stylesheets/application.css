@@ -394,6 +394,225 @@ a:hover {
   padding: 0.15rem 0.75rem;
 }
 
+/* --- variant: glossy (Web 2.0, 2009) --- */
+.banner-ad--glossy .banner-ad__link {
+  background: linear-gradient(180deg, #6db33f 0%, #4a8a20 50%, #3a7010 51%, #5aaa30 100%);
+  border: 1px solid #2a5a10;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--glossy .banner-ad__name {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #FFF;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.banner-ad--glossy .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #E8FFD0;
+}
+.banner-ad--glossy .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #C0E890;
+}
+.banner-ad--glossy .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: linear-gradient(180deg, #FFE44D 0%, #FFB800 50%, #E08000 51%, #FFC820 100%);
+  color: #3A2000;
+  font-family: Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 0.25rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #B86000;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* --- variant: glossy-orange --- */
+.banner-ad--glossy-orange .banner-ad__link {
+  background: linear-gradient(180deg, #FF9A3C 0%, #E06010 50%, #C04800 51%, #E87820 100%);
+  border: 1px solid #903000;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--glossy-orange .banner-ad__name {
+  font-family: "Arial Black", Arial, sans-serif;
+  font-size: 1.3rem;
+  color: #FFF;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.banner-ad--glossy-orange .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #FFE0C0;
+}
+.banner-ad--glossy-orange .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #FFC090;
+}
+.banner-ad--glossy-orange .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: linear-gradient(180deg, #FFF 0%, #E0E0E0 50%, #C8C8C8 51%, #F0F0F0 100%);
+  color: #333;
+  font-family: "Arial Black", sans-serif;
+  font-size: 0.82rem;
+  padding: 0.25rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #999;
+}
+
+/* --- variant: web2blue --- */
+.banner-ad--web2blue .banner-ad__link {
+  background: linear-gradient(180deg, #1E6BB8 0%, #1050A0 50%, #0A3880 51%, #1860B0 100%);
+  border: 1px solid #082860;
+  border-radius: 5px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--web2blue .banner-ad__name {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #FFF;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.banner-ad--web2blue .banner-ad__tagline {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #B8D8FF;
+}
+.banner-ad--web2blue .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #88B8EE;
+}
+.banner-ad--web2blue .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: linear-gradient(180deg, #60C060 0%, #30A030 50%, #208020 51%, #40B040 100%);
+  color: #FFF;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 0.25rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #106010;
+}
+
+/* --- variant: ice --- */
+.banner-ad--ice .banner-ad__link {
+  background: linear-gradient(180deg, #E8F4FF 0%, #C0DEFF 40%, #A0C8FF 100%);
+  border: 2px solid #6090CC;
+  border-radius: 4px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--ice .banner-ad__name {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #082860;
+}
+.banner-ad--ice .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #1A4080;
+  font-weight: bold;
+}
+.banner-ad--ice .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #3060A0;
+}
+.banner-ad--ice .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: #082860;
+  color: #A0C8FF;
+  font-family: "Arial Black", sans-serif;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.9rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+}
+
+/* --- variant: warm09 --- */
+.banner-ad--warm09 .banner-ad__link {
+  background: linear-gradient(180deg, #FFF8EE 0%, #FFE8C8 100%);
+  border: 2px solid #C87840;
+  border-radius: 5px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--warm09 .banner-ad__name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  color: #7A3010;
+  font-style: italic;
+}
+.banner-ad--warm09 .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #5A2800;
+}
+.banner-ad--warm09 .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #8A5030;
+}
+.banner-ad--warm09 .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.3rem;
+  background: linear-gradient(180deg, #E05010 0%, #B03000 100%);
+  color: #FFF;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #802000;
+}
+
+/* --- variant: realty --- */
+.banner-ad--realty .banner-ad__link {
+  background: linear-gradient(180deg, #2C2C2C 0%, #1A1A1A 100%);
+  border: 1px solid #C8A840;
+  border-top: 3px solid #C8A840;
+  border-radius: 3px;
+  padding: 0.7rem 1rem;
+}
+.banner-ad--realty .banner-ad__name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  color: #C8A840;
+  letter-spacing: 0.04em;
+}
+.banner-ad--realty .banner-ad__tagline {
+  font-family: Arial, sans-serif;
+  font-size: 0.8rem;
+  color: #B0B0B0;
+}
+.banner-ad--realty .banner-ad__subline {
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #808080;
+}
+.banner-ad--realty .banner-ad__cta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  background: #C8A840;
+  color: #1A1A1A;
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: bold;
+  padding: 0.2rem 0.9rem;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
 @keyframes banner-flash {
   0%, 100% { background: #FFD700; border-color: #FF0000; }
   50%       { background: #FF6600; border-color: #FFD700; }
@@ -618,6 +837,104 @@ a:hover {
   padding: 0.2rem 0.6rem;
   text-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 255, 65, 0.2);
+}
+
+/* ------------------------------------------------------------------ */
+/* 2009 — dark cosmic / neon nebula                                    */
+/* ------------------------------------------------------------------ */
+
+[data-year="2009"] {
+  background-image:
+    radial-gradient(ellipse at 15% 25%, rgba(168, 85, 247, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 70%, rgba(59, 130, 246, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 70%);
+}
+
+[data-year="2009"] h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.4rem;
+  letter-spacing: 0.03em;
+  text-shadow:
+    0 0 10px rgba(240, 171, 255, 0.8),
+    0 0 30px rgba(168, 85, 247, 0.5),
+    0 0 60px rgba(168, 85, 247, 0.2);
+}
+
+[data-year="2009"] .year-badge {
+  border-color: #A855F7;
+  color: #F0ABFF;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+[data-year="2009"] a {
+  color: #C084FC;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.3);
+}
+
+[data-year="2009"] a:hover {
+  color: #F0ABFF;
+  text-shadow: 0 0 14px rgba(240, 171, 255, 0.8);
+}
+
+[data-year="2009"] .entry-list a::before {
+  content: "✦ ";
+  color: #60A5FA;
+}
+
+[data-year="2009"] .doc-content {
+  border-left: 3px solid #A855F7;
+  background: #0A0720;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.08), inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-year="2009"] .doc-content,
+[data-year="2009"] .doc-content * {
+  color: #D8C8FF !important;
+}
+
+[data-year="2009"] .doc-content p {
+  font-family: Georgia, serif;
+  font-size: 0.97rem;
+  line-height: 1.85;
+}
+
+[data-year="2009"] .comments-section {
+  border-top-color: rgba(168, 85, 247, 0.25);
+}
+
+[data-year="2009"] .comments-heading {
+  color: #60A5FA;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+}
+
+[data-year="2009"] .comment {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: 2px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-year="2009"] .comment__username {
+  color: #F0ABFF;
+  text-shadow: 0 0 8px rgba(240, 171, 255, 0.5);
+}
+
+[data-year="2009"] .comment__body {
+  color: #C4B5FD;
+  opacity: 1;
+}
+
+[data-year="2009"] .music-player__label {
+  color: #60A5FA;
+  text-shadow: 0 0 6px rgba(96, 165, 250, 0.4);
+  opacity: 1;
+}
+
+[data-year="2009"] .music-player__frame {
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.1);
 }
 
 /* ------------------------------------------------------------------ */
