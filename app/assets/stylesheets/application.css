@@ -938,26 +938,7 @@ a:hover {
 }
 
 /* ------------------------------------------------------------------ */
-/* Home — marquee                                                      */
-/* ------------------------------------------------------------------ */
-
-.home-marquee {
-  display: block;
-  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
-  font-size: 1.15rem;
-  font-weight: bold;
-  color: #FFD700;
-  background: rgba(0, 0, 0, 0.75);
-  text-shadow: 1px 1px 0 #000, 0 0 10px rgba(255, 215, 0, 0.4);
-  letter-spacing: 0.04em;
-  padding: 0.5rem 0;
-  margin-bottom: 2rem;
-  border-top: 2px solid rgba(255, 215, 0, 0.3);
-  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
-}
-
-/* ------------------------------------------------------------------ */
-/* Home — Lake of the Woods                                            */
+/* Home                                                                */
 /* ------------------------------------------------------------------ */
 
 [data-page="home"] {
@@ -976,44 +957,50 @@ a:hover {
 }
 
 [data-page="home"] h1 {
-  color: #FF1A1A;
+  color: #fff;
   font-family: "Playfair Display", Georgia, serif;
   font-size: 3.2rem;
   font-weight: normal;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
   margin-bottom: 0.15rem;
 }
 
 .home-card {
-  background: rgba(0, 0, 0, 0.55);
-  padding: 2rem 2.5rem 2.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 2.5rem 3rem 3rem;
   display: inline-block;
   min-width: 280px;
 }
 
 [data-page="home"] .year-list {
-  margin-top: 2.5rem;
+  margin-top: 2rem;
 }
 
 [data-page="home"] .year-list li {
-  border-top-color: rgba(240, 237, 232, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.15);
   opacity: 1;
 }
 
 [data-page="home"] .year-list li:last-child {
-  border-bottom-color: rgba(240, 237, 232, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.15);
   opacity: 1;
 }
 
 [data-page="home"] .year-list a {
-  color: #FF1A1A;
-  font-size: 1.7rem;
-  font-weight: bold;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.5rem;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  transition: color 0.2s ease;
 }
 
 [data-page="home"] .year-list a:hover {
-  color: #FF6666;
+  color: #fff;
   border-bottom: none;
 }
 
@@ -1041,8 +1028,6 @@ a:hover {
   .entry-list a { padding: 1rem 0; font-size: 1rem; }
 
   .doc-content { padding: 1.25rem 1rem 1.25rem 0.9rem; }
-
-  .home-marquee { font-size: 0.95rem; }
 
   [data-page="home"] h1 { font-size: 2.2rem; }
 
