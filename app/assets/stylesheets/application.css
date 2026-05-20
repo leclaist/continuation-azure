@@ -958,10 +958,10 @@ a:hover {
 
 [data-page="home"] h1 {
   color: #fff;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 3.2rem;
-  font-weight: normal;
-  letter-spacing: -0.01em;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 2.8rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
   margin-bottom: 0.15rem;
 }
@@ -971,6 +971,7 @@ a:hover {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
   padding: 2.5rem 3rem 3rem;
   display: inline-block;
   min-width: 280px;
@@ -981,20 +982,21 @@ a:hover {
 }
 
 [data-page="home"] .year-list li {
-  border-top-color: rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.12);
   opacity: 1;
 }
 
 [data-page="home"] .year-list li:last-child {
-  border-bottom-color: rgba(255, 255, 255, 0.15);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
   opacity: 1;
 }
 
 [data-page="home"] .year-list a {
   color: rgba(255, 255, 255, 0.82);
-  font-size: 1.5rem;
-  font-weight: normal;
-  letter-spacing: 0.02em;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.3rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
   text-shadow: none;
   transition: color 0.2s ease;
 }
@@ -1029,7 +1031,7 @@ a:hover {
 
   .doc-content { padding: 1.25rem 1rem 1.25rem 0.9rem; }
 
-  [data-page="home"] h1 { font-size: 2.2rem; }
+  [data-page="home"] h1 { font-size: 1.9rem; }
 
   [data-page="home"] .page {
     padding-top: 2.5rem;
@@ -1050,6 +1052,6 @@ a:hover {
 @media (min-width: 601px) and (max-width: 900px) {
   .page { padding: 2.5rem 2rem 4rem; }
   h1 { font-size: 1.95rem; }
-  [data-page="home"] h1 { font-size: 2.6rem; }
+  [data-page="home"] h1 { font-size: 2.2rem; }
   [data-year="2008"] h1 { font-size: 2.2rem; }
 }
