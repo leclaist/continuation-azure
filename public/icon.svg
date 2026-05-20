@@ -1,3 +1,16 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- tier 1 -->
+  <rect x="7" y="1" width="2" height="1" fill="#2d6a4f"/>
+  <rect x="6" y="2" width="4" height="1" fill="#2d6a4f"/>
+  <rect x="5" y="3" width="6" height="1" fill="#2d6a4f"/>
+  <!-- tier 2 -->
+  <rect x="6" y="4" width="4" height="1" fill="#2d6a4f"/>
+  <rect x="5" y="5" width="6" height="1" fill="#2d6a4f"/>
+  <rect x="4" y="6" width="8" height="1" fill="#1b4332"/>
+  <!-- tier 3 -->
+  <rect x="5" y="7" width="6" height="1" fill="#2d6a4f"/>
+  <rect x="4" y="8" width="8" height="1" fill="#2d6a4f"/>
+  <rect x="3" y="9" width="10" height="1" fill="#1b4332"/>
+  <!-- trunk -->
+  <rect x="7" y="10" width="2" height="3" fill="#9C6B3B"/>
 </svg>
