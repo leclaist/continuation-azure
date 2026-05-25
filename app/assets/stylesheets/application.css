@@ -12,13 +12,13 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.05rem;
-  line-height: 1.75;
+  font-size: 1.15rem;
+  line-height: 1.85;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .page {
-  max-width: 680px;
+  max-width: 780px;
   margin: 0 auto;
   padding: 3rem 1.5rem 5rem;
 }
@@ -136,7 +136,7 @@ a:hover {
 .doc-content {
   background: var(--color-surface);
   border-left: 3px solid var(--color-accent);
-  padding: 2rem 2rem 2rem 1.75rem;
+  padding: 2.5rem 2.5rem 2.5rem 2.25rem;
   margin-top: 2rem;
   border-radius: 0 4px 4px 0;
 }
