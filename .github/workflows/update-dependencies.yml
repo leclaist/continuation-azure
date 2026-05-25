@@ -51,7 +51,8 @@ jobs:
 
       - name: Update all gems
         run: |
-          bundle update
+          bundle config set --local frozen false
+          bundle update --all
           bundle list | grep '* rails ' | awk '{print $3}' | tr -d '()' > /tmp/rails-version.txt
 
       - name: Audit updated dependencies
