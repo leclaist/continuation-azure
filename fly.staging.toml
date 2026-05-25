@@ -1,0 +1,29 @@
+app = 'continuation-staging'
+primary_region = 'ord'
+console_command = '/rails/bin/rails console'
+
+[build]
+
+[env]
+  DATABASE_URL = 'sqlite3:///data/staging.sqlite3'
+  PORT = '8080'
+
+[processes]
+  app = "./bin/rails server"
+
+[[mounts]]
+  source = 'data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
