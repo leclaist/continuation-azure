@@ -18,6 +18,16 @@
       <div class="comment">
         <span class="comment__username"><%= comment['username'] %></span>
         <p class="comment__body"><%= comment['body'] %></p>
+        <% if comment['replies'].present? %>
+          <div class="comment__replies">
+            <% comment['replies'].each do |reply| %>
+              <div class="comment__reply">
+                <span class="comment__username"><%= reply['username'] %></span>
+                <p class="comment__body"><%= reply['body'] %></p>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
       </div>
     <% end %>
   </div>

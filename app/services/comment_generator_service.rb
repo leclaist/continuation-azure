@@ -48,12 +48,18 @@ class CommentGeneratorService
       You are generating fake blog comments for a personal journal entry from #{year}.
       The comments should be written in the style of: #{voice[:style]}
 
-      Write exactly #{voice[:count]} comments from different fictional people reacting to this journal entry.
+      Write exactly #{voice[:count]} top-level comments from different fictional people reacting to this journal entry.
       Read the entire entry before writing. Each comment must reference a specific detail, moment, or feeling
       from the entry — not just the opening. Spread references across the whole entry, not just the beginning.
       Keep each comment short (1-3 sentences). Use era-appropriate usernames.
 
-      Return ONLY a JSON array with no other text. Each object has: "username" and "body".
+      Some comments (not all) should have replies from other people. Replies should feel like a real comment section
+      devolving into argument — people disagreeing with each other, taking sides, getting defensive, going off topic.
+      Each reply thread should have 2-4 replies. Replies argue with the comment above them or with each other.
+      Keep replies short and increasingly unhinged as the thread goes on.
+
+      Return ONLY a JSON array with no other text.
+      Each object has: "username", "body", and optionally "replies" (an array of {"username", "body"} objects).
 
       Journal entry text:
       #{plain_text}
