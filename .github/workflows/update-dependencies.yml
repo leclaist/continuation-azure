@@ -73,7 +73,13 @@ jobs:
           git checkout -b "$branch"
           git add .ruby-version Gemfile.lock
           git commit -m "chore: update Ruby to ${{ steps.ruby.outputs.latest }} and gem dependencies"
-          git push origin "$branch"
+          git push --force origin "$branch"
+
+          existing=$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already exists for $branch, skipping create"
+            exit 0
+          fi
 
           rails_version=$(cat /tmp/rails-version.txt)
           pre_audit=$(cat /tmp/pre-audit.txt)
