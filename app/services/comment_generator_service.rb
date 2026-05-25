@@ -42,14 +42,15 @@ class CommentGeneratorService
 
   def generate(year:, content_html:)
     voice = YEAR_VOICE[year] || DEFAULT_VOICE
-    plain_text = Nokogiri::HTML(content_html).text.strip.truncate(1500)
+    plain_text = Nokogiri::HTML(content_html).text.strip.truncate(5000)
 
     prompt = <<~PROMPT
       You are generating fake blog comments for a personal journal entry from #{year}.
       The comments should be written in the style of: #{voice[:style]}
 
       Write exactly #{voice[:count]} comments from different fictional people reacting to this journal entry.
-      Each comment should feel authentic to the era and react specifically to something in the entry content.
+      Read the entire entry before writing. Each comment must reference a specific detail, moment, or feeling
+      from the entry — not just the opening. Spread references across the whole entry, not just the beginning.
       Keep each comment short (1-3 sentences). Use era-appropriate usernames.
 
       Return ONLY a JSON array with no other text. Each object has: "username" and "body".
