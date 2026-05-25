@@ -22,16 +22,18 @@ class CommentGeneratorService
   end
 
   def comments_for(file_id:, year:, content_html:)
+    hash = Digest::SHA256.hexdigest(content_html)
     cached = GeneratedComment.for_file(file_id)
-    return cached.comments if cached
+
+    return cached.comments if cached && !cached.stale?(hash)
 
     comments = generate(year: year, content_html: content_html)
-    if comments.any?
-      GeneratedComment.create!(
-        file_id: file_id,
-        year: year,
-        comments_json: comments.to_json
-      )
+    return comments if comments.empty?
+
+    if cached
+      cached.update!(comments_json: comments.to_json, content_hash: hash)
+    else
+      GeneratedComment.create!(file_id: file_id, year: year, comments_json: comments.to_json, content_hash: hash)
     end
     comments
   end
