@@ -18,7 +18,7 @@ Entries are accessed at `/:year/:slug`, e.g. `/2008/nov-14-2008`.
 |---|---|
 | Content storage | Google Drive (read-only, service account) |
 | Database | SQLite via Solid Cache / Queue / Cable |
-| Deployment | Fly.io (single machine, 1GB, `ord` region) |
+| Deployment | Fly.io, two environments (staging + production), `ord` region |
 | Asset pipeline | Propshaft + importmap |
 | Background jobs | Solid Queue |
 
@@ -70,16 +70,28 @@ bin/importmap audit       # JS dependency audit
 
 ## Deployment
 
-Deployed to Fly.io. Pushes to `main` deploy automatically via GitHub Actions.
+Two environments on Fly.io, both deploying automatically on push to `main`:
+
+| Environment | URL | Machine |
+|---|---|---|
+| Staging | `https://continuation-staging.fly.dev` | 512MB, suspends when idle |
+| Production | `https://continuation.fly.dev` | 1GB, stops when idle |
+
+**Deploy pipeline** — staging deploys first, then a smoke test polls the staging URL until it returns HTTP 200. If it passes, production deploys. If it fails, production is not touched.
 
 ```bash
-fly deploy          # manual deploy
-fly logs            # tail logs
-fly ssh console     # open a console on the running machine
-bin/rails console   # shortcut defined in fly.toml
+# Staging
+fly deploy --config fly.staging.toml   # manual staging deploy
+fly logs --app continuation-staging
+fly ssh console --app continuation-staging
+
+# Production
+fly deploy --config fly.toml           # manual production deploy
+fly logs
+fly ssh console
 ```
 
-SQLite data is stored on a persistent Fly volume (`/data`). The volume auto-extends at 80% capacity up to 10GB.
+SQLite data is stored on a persistent Fly volume (`/data`) in each environment. The production volume auto-extends at 80% capacity up to 10GB.
 
 ## CI / dependency automation
 
