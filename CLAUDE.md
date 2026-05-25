@@ -6,7 +6,7 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 
 - **Content source**: Google Drive folder (read-only, service account). Files are named by date. No content in the database.
 - **Database**: SQLite — stores only visitor counter and cached AI-generated comments.
-- **Deployment**: Fly.io (`ord` region). Pushes to `main` auto-deploy via GitHub Actions.
+- **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
 - **Ruby**: `.ruby-version` is `4.0.5` (production). Local may differ — don't be surprised by rbenv errors when running generators.
 
 ## Commands
@@ -20,8 +20,13 @@ git push                 # triggers CI + auto-deploy to Fly
 ```
 
 ```bash
-fly ssh console --command "/rails/bin/rails runner '...'"  # run code on prod
-fly logs                                                    # tail prod logs
+# Staging: https://continuation-staging.fly.dev
+fly ssh console --app continuation-staging --command "/rails/bin/rails runner '...'"
+fly logs --app continuation-staging
+
+# Production: https://continuation.fly.dev
+fly ssh console --command "/rails/bin/rails runner '...'"
+fly logs
 ```
 
 ## Architecture
@@ -47,8 +52,16 @@ fly logs                                                    # tail prod logs
 ## CI / automation
 
 - **CI** runs on every PR and push: Brakeman, bundler-audit, importmap audit, RuboCop, tests
+- **Deploy pipeline** (push to `main`): staging deploy → smoke test `continuation-staging.fly.dev` → production deploy. Production never deploys if staging smoke test fails.
 - **Dependabot PRs** auto-merge when CI passes
 - **Weekly Monday 9am UTC**: `Update Ruby and dependencies` workflow updates Ruby + gems, opens and merges a PR automatically
+
+### GitHub Actions secrets
+
+| Secret | Used by |
+|---|---|
+| `FLY_API_TOKEN` | Production deploy |
+| `FLY_STAGING_API_TOKEN` | Staging deploy (scoped to `continuation-staging`) |
 
 ## Skills
 
