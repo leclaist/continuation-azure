@@ -4,19 +4,22 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
+  # Fires automatically after CI completes on a dependabot branch
   auto-merge:
     runs-on: ubuntu-latest
     if: >
+      github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.actor.login == 'dependabot[bot]'
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
     steps:
-      - name: Find Dependabot PR
+      - name: Find PR
         id: pr
         run: |
           number=$(gh pr list \
@@ -38,5 +41,28 @@ jobs:
       - name: Merge
         if: steps.pr.outputs.number
         run: gh pr merge ${{ steps.pr.outputs.number }} --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Triggered manually to catch PRs that already have green CI
+  auto-merge-existing:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Merge all passing Dependabot PRs
+        run: |
+          gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --author "dependabot[bot]" \
+            --json number,statusCheckRollup \
+            --jq '.[] | select(
+              (.statusCheckRollup | length > 0) and
+              (.statusCheckRollup | all(.conclusion == "SUCCESS"))
+            ) | .number' | \
+          while read -r number; do
+            echo "Processing PR #$number"
+            gh pr review "$number" --approve || true
+            gh pr merge "$number" --squash || true
+          done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
