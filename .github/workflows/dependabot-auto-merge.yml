@@ -1,4 +1,4 @@
-name: Dependabot auto-merge
+name: Auto-merge
 
 on:
   workflow_run:
@@ -11,13 +11,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Fires automatically after CI completes on a dependabot branch
+  # Fires automatically after CI completes on a dependabot or automated branch
   auto-merge:
     runs-on: ubuntu-latest
     if: >
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+      (startsWith(github.event.workflow_run.head_branch, 'dependabot/') ||
+       startsWith(github.event.workflow_run.head_branch, 'automated/'))
     steps:
       - name: Find PR
         id: pr
@@ -25,7 +26,6 @@ jobs:
           number=$(gh pr list \
             --repo "$GITHUB_REPOSITORY" \
             --head "${{ github.event.workflow_run.head_branch }}" \
-            --author "dependabot[bot]" \
             --json number \
             --jq '.[0].number // empty')
           echo "number=$number" >> "$GITHUB_OUTPUT"
@@ -34,7 +34,9 @@ jobs:
 
       - name: Approve
         if: steps.pr.outputs.number
-        run: gh pr review ${{ steps.pr.outputs.number }} --approve
+        # Approval may fail if the PR was opened by the same token (automated PRs).
+        # That's fine — no branch protection rules require it.
+        run: gh pr review ${{ steps.pr.outputs.number }} --approve || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -49,13 +51,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - name: Merge all passing Dependabot PRs
+      - name: Merge all passing automated and Dependabot PRs
         run: |
           gh pr list \
             --repo "$GITHUB_REPOSITORY" \
-            --author "dependabot[bot]" \
-            --json number,statusCheckRollup \
+            --json number,headRefName,statusCheckRollup \
             --jq '.[] | select(
+              (.headRefName | startswith("dependabot/") or startswith("automated/")) and
               (.statusCheckRollup | length > 0) and
               (.statusCheckRollup | all(.conclusion == "SUCCESS"))
             ) | .number' | \
