@@ -27,6 +27,9 @@
     <% if (year = content_for(:theme_year)).present? %>
       <style><%= theme_css_variables(year) %></style>
     <% end %>
+    <% if content_for(:theme_year) == "2008" %>
+      <style>[data-year="2008"] { background-image: url('<%= asset_path("bg-2008.jpg") %>'); }</style>
+    <% end %>
   </head>
 
   <body data-year="<%= content_for(:theme_year) %>" data-page="<%= content_for(:body_data) %>">
