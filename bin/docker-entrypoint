@@ -8,6 +8,9 @@ fi
 
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+  # Remove stale SQLite WAL/SHM files left by crashed containers.
+  # Azure Files SMB doesn't release these locks automatically on crash.
+  find /data -name "*.sqlite3-wal" -o -name "*.sqlite3-shm" 2>/dev/null | xargs rm -f 2>/dev/null || true
   ./bin/rails db:prepare
 fi
 
