@@ -101,7 +101,7 @@ A second deployment that triggers automatically after Fly.io staging passes its 
 
 | | |
 |---|---|
-| URL | `https://continuation.blackwater-20ce7cd2.eastus.azurecontainerapps.io` |
+| URL | `https://christineclaymoreau.lol` |
 | Region | East US |
 | Registry | Azure Container Registry (`continuationacr`, Basic SKU) |
 | Replicas | 1 min / 1 max (always warm, no cold starts) |

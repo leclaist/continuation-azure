@@ -22,3 +22,9 @@ variable "anthropic_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "custom_domain_cert_id" {
+  description = "Azure resource ID of the managed certificate for christineclaymoreau.lol. Obtain after running the hostname bind CLI command (see comment in main.tf ingress block)."
+  type        = string
+  default     = "/subscriptions/33ad2025-a25b-412e-bc5a-6eb69d979276/resourceGroups/continuation-rg/providers/Microsoft.App/managedEnvironments/continuation-env/managedCertificates/mc-continuation-e-christineclaymor-6017"
+}

@@ -184,6 +184,35 @@ resource "azurerm_container_app" "main" {
     target_port      = 3000
     transport        = "auto"
 
+    # Custom domain with Azure-managed TLS certificate.
+    #
+    # Bootstrapping a fresh environment: Terraform cannot provision the managed
+    # certificate itself. After `terraform apply`, run these two CLI commands
+    # once, then update `custom_domain_cert_id` in your tfvars with the
+    # resulting certificate ID:
+    #
+    #   az containerapp hostname add \
+    #     --hostname christineclaymoreau.lol \
+    #     --name continuation --resource-group continuation-rg
+    #
+    #   az containerapp hostname bind \
+    #     --hostname christineclaymoreau.lol \
+    #     --name continuation --resource-group continuation-rg \
+    #     --environment continuation-env --validation-method HTTP
+    #
+    #   az containerapp env certificate list \
+    #     --name continuation-env --resource-group continuation-rg \
+    #     --query "[?properties.subjectName=='christineclaymoreau.lol'].id" -o tsv
+    #
+    # Required DNS records (set at your registrar):
+    #   A   @     48.206.132.78
+    #   TXT asuid 89EB5A6DAE4034C02D11B2D11AF4B369738734587B91C06887B4A4592D5E173A
+    custom_domain {
+      name                     = "christineclaymoreau.lol"
+      certificate_binding_type = "SniEnabled"
+      certificate_id           = var.custom_domain_cert_id
+    }
+
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -196,6 +225,10 @@ resource "azurerm_container_app" "main" {
 # ---------------------------------------------------------------------------
 
 output "app_url" {
+  value = "https://christineclaymoreau.lol"
+}
+
+output "app_url_azure" {
   value = "https://${azurerm_container_app.main.ingress[0].fqdn}"
 }
 
