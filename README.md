@@ -70,7 +70,9 @@ bin/importmap audit       # JS dependency audit
 
 ## Deployment
 
-Two environments on Fly.io, both deploying automatically on push to `main`:
+### Fly.io
+
+Two environments, both deploying automatically on push to `main`:
 
 | Environment | URL | Machine |
 |---|---|---|
@@ -92,6 +94,56 @@ fly ssh console
 ```
 
 SQLite data is stored on a persistent Fly volume (`/data`) in each environment. The production volume auto-extends at 80% capacity up to 10GB.
+
+### Azure Container Apps
+
+A second deployment that triggers automatically after Fly.io staging passes its smoke test — so Fly staging acts as a quality gate for Azure too.
+
+| | |
+|---|---|
+| URL | `https://continuation.blackwater-20ce7cd2.eastus.azurecontainerapps.io` |
+| Region | East US |
+| Registry | Azure Container Registry (`continuationacr`, Basic SKU) |
+| Replicas | 1 min / 1 max (always warm, no cold starts) |
+
+The workflow lives in `.github/workflows/azure-deploy.yml`. On each successful Fly deploy it builds a new image tagged with the git SHA, pushes it to ACR, and updates the container app. Required GitHub secret: `AZURE_CREDENTIALS` (service principal JSON).
+
+```bash
+# Manual deploy
+az acr build --registry continuationacr --image continuation:latest .
+az containerapp update \
+  --name continuation \
+  --resource-group continuation-rg \
+  --image continuationacr.azurecr.io/continuation:latest
+
+# Logs
+az containerapp logs show --name continuation --resource-group continuation-rg --tail 50
+
+# Check revision health
+az containerapp revision list --name continuation --resource-group continuation-rg -o table
+```
+
+**SQLite** uses local ephemeral container storage (`/rails/storage/`), not a mounted volume. Azure Files SMB does not support the POSIX file locking SQLite requires. The visitor counter and cached AI comments reset on container restart — both regenerate automatically.
+
+**Thruster port config** — the container runs as a non-root user, so Thruster cannot bind to port 80. It is configured to listen on port 3000 (`HTTP_PORT=3000`) and proxy internally to Puma on port 3001 (`TARGET_PORT=3001`). The Container Apps ingress routes to port 3000.
+
+**`GOOGLE_SERVICE_ACCOUNT_JSON` secret** — must be stored as compact single-line JSON (no surrounding quotes, no literal newlines). The `.env` file typically has it pretty-printed and wrapped in single quotes, which will not parse correctly. Use this to set it correctly:
+
+```bash
+python3 -c "
+import json, re
+content = open('.env').read()
+m = re.search(r\"GOOGLE_SERVICE_ACCOUNT_JSON='(.*?)'\", content, re.DOTALL)
+print(json.dumps(json.loads(m.group(1))), end='')
+" > /tmp/sa.json
+
+az containerapp secret set \
+  --name continuation \
+  --resource-group continuation-rg \
+  --secrets "google-service-account-json=$(cat /tmp/sa.json)" && rm /tmp/sa.json
+```
+
+Terraform for the Azure infrastructure lives in `infra/`.
 
 ## CI / dependency automation
 
