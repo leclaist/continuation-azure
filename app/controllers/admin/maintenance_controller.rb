@@ -1,4 +1,5 @@
 class Admin::MaintenanceController < ApplicationController
+  skip_forgery_protection
   before_action :verify_token
 
   def clear_comments
