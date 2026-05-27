@@ -67,14 +67,17 @@ class CommentGeneratorService
 
     response = @client.messages.create(
       model: :"claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      max_tokens: 1500,
       messages: [ { role: "user", content: prompt } ]
     )
 
     text = response.content.find { |b| b.type == :text }&.text || "[]"
     text = text.gsub(/\A```(?:json)?\s*|\s*```\z/, "").strip
     JSON.parse(text)
-  rescue JSON::ParserError, Anthropic::Error => e
+  rescue JSON::ParserError => e
+    Rails.logger.error("CommentGeneratorService error: #{e.message}")
+    []
+  rescue Anthropic::Error => e
     Rails.logger.error("CommentGeneratorService error: #{e.message}")
     []
   end
