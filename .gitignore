@@ -22,3 +22,6 @@ config/credentials/*.key
 # macOS
 .DS_Store
 infra/*.tfvars
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
