@@ -26,7 +26,7 @@ jobs:
         run: |
           echo "Waiting for staging to wake up..."
           for i in $(seq 1 10); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://continuation-staging.fly.dev)
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://continuation-staging.fly.dev || echo "000")
             echo "Attempt $i: HTTP $status"
             if [ "$status" = "200" ]; then
               echo "Staging is healthy"
