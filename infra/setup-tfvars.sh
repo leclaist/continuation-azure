@@ -7,7 +7,7 @@
 #
 # Optional env vars:
 #   GOOGLE_DRIVE_FOLDER_ID   — skip the prompt
-#   ANTHROPIC_API_KEY        — include AI comment generation (leave unset to omit)
+#   ANTHROPIC_API_KEY        — skip the prompt (press enter to omit)
 
 set -euo pipefail
 
@@ -38,7 +38,13 @@ if [[ -z "${GOOGLE_DRIVE_FOLDER_ID:-}" ]]; then
   read -rp "Google Drive folder ID: " GOOGLE_DRIVE_FOLDER_ID
 fi
 
+# --- anthropic api key ---------------------------------------------------
+if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+  read -rp "Anthropic API key (press enter to omit): " ANTHROPIC_API_KEY
+fi
+
 # --- write tfvars (Python handles the HCL escaping) ----------------------
+export ANTHROPIC_API_KEY
 python3 - <<PYEOF
 import json, os
 
