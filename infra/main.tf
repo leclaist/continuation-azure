@@ -111,9 +111,12 @@ resource "azurerm_container_app" "main" {
     value = var.google_service_account_json
   }
 
-  secret {
-    name  = "anthropic-api-key"
-    value = var.anthropic_api_key
+  dynamic "secret" {
+    for_each = var.anthropic_api_key != "" ? [1] : []
+    content {
+      name  = "anthropic-api-key"
+      value = var.anthropic_api_key
+    }
   }
 
   template {
@@ -167,9 +170,12 @@ resource "azurerm_container_app" "main" {
         secret_name = "google-service-account-json"
       }
 
-      env {
-        name        = "ANTHROPIC_API_KEY"
-        secret_name = "anthropic-api-key"
+      dynamic "env" {
+        for_each = var.anthropic_api_key != "" ? [1] : []
+        content {
+          name        = "ANTHROPIC_API_KEY"
+          secret_name = "anthropic-api-key"
+        }
       }
 
       volume_mounts {
@@ -217,12 +223,10 @@ resource "azurerm_container_app" "main" {
 #   TXT asuid 89EB5A6DAE4034C02D11B2D11AF4B369738734587B91C06887B4A4592D5E173A
 # ---------------------------------------------------------------------------
 
-resource "azurerm_container_app_custom_domain" "main" {
-  name                                              = "christineclaymoreau.lol"
-  container_app_id                                  = azurerm_container_app.main.id
-  container_app_environment_certificate_id          = var.custom_domain_cert_id
-  certificate_binding_type                          = "SniEnabled"
-}
+# NOTE: azurerm 3.x cannot manage managed certificate bindings — both the
+# deprecated custom_domain block and azurerm_container_app_custom_domain reject
+# the managedCertificates/... ID format. The domain binding is set up manually
+# via the CLI commands above and lives outside Terraform state.
 
 # ---------------------------------------------------------------------------
 # Outputs
