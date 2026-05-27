@@ -184,40 +184,44 @@ resource "azurerm_container_app" "main" {
     target_port      = 3000
     transport        = "auto"
 
-    # Custom domain with Azure-managed TLS certificate.
-    #
-    # Bootstrapping a fresh environment: Terraform cannot provision the managed
-    # certificate itself. After `terraform apply`, run these two CLI commands
-    # once, then update `custom_domain_cert_id` in your tfvars with the
-    # resulting certificate ID:
-    #
-    #   az containerapp hostname add \
-    #     --hostname christineclaymoreau.lol \
-    #     --name continuation --resource-group continuation-rg
-    #
-    #   az containerapp hostname bind \
-    #     --hostname christineclaymoreau.lol \
-    #     --name continuation --resource-group continuation-rg \
-    #     --environment continuation-env --validation-method HTTP
-    #
-    #   az containerapp env certificate list \
-    #     --name continuation-env --resource-group continuation-rg \
-    #     --query "[?properties.subjectName=='christineclaymoreau.lol'].id" -o tsv
-    #
-    # Required DNS records (set at your registrar):
-    #   A   @     48.206.132.78
-    #   TXT asuid 89EB5A6DAE4034C02D11B2D11AF4B369738734587B91C06887B4A4592D5E173A
-    custom_domain {
-      name                     = "christineclaymoreau.lol"
-      certificate_binding_type = "SniEnabled"
-      certificate_id           = var.custom_domain_cert_id
-    }
-
     traffic_weight {
       latest_revision = true
       percentage      = 100
     }
   }
+}
+
+# ---------------------------------------------------------------------------
+# Custom domain
+#
+# Bootstrapping a fresh environment: Terraform cannot provision the managed
+# certificate itself. After the first `terraform apply`, run these CLI commands
+# once, then set `custom_domain_cert_id` in your tfvars to the resulting ID
+# and run `terraform apply` again:
+#
+#   az containerapp hostname add \
+#     --hostname christineclaymoreau.lol \
+#     --name continuation --resource-group continuation-rg
+#
+#   az containerapp hostname bind \
+#     --hostname christineclaymoreau.lol \
+#     --name continuation --resource-group continuation-rg \
+#     --environment continuation-env --validation-method HTTP
+#
+#   az containerapp env certificate list \
+#     --name continuation-env --resource-group continuation-rg \
+#     --query "[?properties.subjectName=='christineclaymoreau.lol'].id" -o tsv
+#
+# Required DNS records (set at your registrar):
+#   A   @     48.206.132.78
+#   TXT asuid 89EB5A6DAE4034C02D11B2D11AF4B369738734587B91C06887B4A4592D5E173A
+# ---------------------------------------------------------------------------
+
+resource "azurerm_container_app_custom_domain" "main" {
+  name                                              = "christineclaymoreau.lol"
+  container_app_id                                  = azurerm_container_app.main.id
+  container_app_environment_certificate_id          = var.custom_domain_cert_id
+  certificate_binding_type                          = "SniEnabled"
 }
 
 # ---------------------------------------------------------------------------
