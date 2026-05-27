@@ -102,6 +102,11 @@ resource "azurerm_container_app" "main" {
   }
 
   secret {
+    name  = "admin-token"
+    value = var.admin_token
+  }
+
+  secret {
     name  = "google-drive-folder-id"
     value = var.google_drive_folder_id
   }
@@ -158,6 +163,11 @@ resource "azurerm_container_app" "main" {
       env {
         name        = "RAILS_MASTER_KEY"
         secret_name = "rails-master-key"
+      }
+
+      env {
+        name        = "ADMIN_TOKEN"
+        secret_name = "admin-token"
       }
 
       env {

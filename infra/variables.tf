@@ -16,6 +16,12 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
+variable "admin_token" {
+  description = "Secret token for the /admin/* maintenance endpoints (X-Admin-Token header)"
+  type        = string
+  sensitive   = true
+}
+
 variable "anthropic_api_key" {
   description = "Anthropic API key for AI comment generation (optional — omit to disable)"
   type        = string

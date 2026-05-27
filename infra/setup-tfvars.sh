@@ -43,8 +43,18 @@ if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
   read -rp "Anthropic API key (press enter to omit): " ANTHROPIC_API_KEY
 fi
 
+# --- admin token ---------------------------------------------------------
+if [[ -z "${ADMIN_TOKEN:-}" ]]; then
+  read -rp "Admin token (press enter to generate one): " ADMIN_TOKEN
+  if [[ -z "$ADMIN_TOKEN" ]]; then
+    ADMIN_TOKEN=$(openssl rand -hex 32)
+    echo "Generated admin token: $ADMIN_TOKEN"
+  fi
+fi
+
 # --- write tfvars (Python handles the HCL escaping) ----------------------
 export ANTHROPIC_API_KEY
+export ADMIN_TOKEN
 python3 - <<PYEOF
 import json, os
 
@@ -58,11 +68,13 @@ sa_single = json.dumps(sa)
 sa_hcl = sa_single.replace('\\\\', '\\\\\\\\').replace('"', '\\\\"')
 
 anthropic = os.environ.get("ANTHROPIC_API_KEY", "")
+admin_token = os.environ.get("ADMIN_TOKEN", "")
 
 lines = [
     'rails_master_key            = "$RAILS_MASTER_KEY"',
     'google_drive_folder_id      = "$GOOGLE_DRIVE_FOLDER_ID"',
     f'google_service_account_json = "{sa_hcl}"',
+    f'admin_token                 = "{admin_token}"',
 ]
 if anthropic:
     lines.append(f'anthropic_api_key           = "{anthropic}"')
