@@ -117,7 +117,7 @@ resource "azurerm_container_app" "main" {
   }
 
   template {
-    min_replicas = 1
+    min_replicas = 0
     max_replicas = 1
 
     # Azure Files mount — kept for potential future use, not used for SQLite.
