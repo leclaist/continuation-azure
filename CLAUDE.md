@@ -79,6 +79,12 @@ fly logs
 - Helpers: include the module directly in an `ActiveSupport::TestCase` subclass.
 - `with_env` in `EntriesControllerTest` is the pattern for temporarily setting ENV vars in a test.
 
+**After writing or editing any code or tests, always run:**
+```bash
+bin/rubocop -A   # auto-correct style issues
+bin/rails test   # confirm nothing broke
+```
+
 **What's intentionally not tested:**
 - `GoogleDriveService` (pure API adapter)
 - `CommentGeneratorService#generate` (calls Anthropic API — use caching layer tests instead)

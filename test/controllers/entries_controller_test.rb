@@ -52,7 +52,7 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
   private
 
   def with_env(vars)
-    old = vars.to_h { |k, _| [k, ENV[k.to_s]] }
+    old = vars.to_h { |k, _| [ k, ENV[k.to_s] ] }
     vars.each { |k, v| v.nil? ? ENV.delete(k.to_s) : ENV[k.to_s] = v }
     yield
   ensure
