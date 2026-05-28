@@ -33,7 +33,37 @@ resource "azurerm_container_registry" "main" {
 }
 
 # ---------------------------------------------------------------------------
+# Log Analytics workspace
+# ---------------------------------------------------------------------------
+
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "continuation-logs"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+# ---------------------------------------------------------------------------
 # Container Apps environment
+#
+# Attaching the Log Analytics workspace to an existing environment requires
+# a one-time CLI command — azurerm 3.x treats log_analytics_workspace_id as
+# ForceNew, so setting it in Terraform would destroy and recreate the
+# environment (and lose the custom domain binding). Run this once after
+# `terraform apply` creates the workspace:
+#
+#   WORKSPACE_ID=$(az monitor log-analytics workspace show \
+#     --resource-group continuation-rg --workspace-name continuation-logs \
+#     --query customerId -o tsv)
+#   WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
+#     --resource-group continuation-rg --workspace-name continuation-logs \
+#     --query primarySharedKey -o tsv)
+#   az containerapp env update \
+#     --name continuation-env --resource-group continuation-rg \
+#     --logs-destination log-analytics \
+#     --logs-workspace-id "$WORKSPACE_ID" \
+#     --logs-workspace-key "$WORKSPACE_KEY"
 # ---------------------------------------------------------------------------
 
 resource "azurerm_container_app_environment" "main" {
@@ -241,6 +271,10 @@ resource "azurerm_container_app" "main" {
 # ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
+
+output "log_analytics_workspace_id" {
+  value = azurerm_log_analytics_workspace.main.workspace_id
+}
 
 output "app_url" {
   value = "https://christineclaymoreau.lol"

@@ -26,6 +26,19 @@ git config core.hooksPath .githooks
 This enables a pre-commit hook that auto-corrects rubocop offenses on staged files and blocks the commit if any can't be fixed automatically.
 
 ```bash
+# Azure production logs — live tail (no workspace needed)
+az containerapp logs show --name continuation --resource-group continuation-rg --follow
+
+# Azure production logs — query last 50 lines from Log Analytics
+az monitor log-analytics query \
+  --workspace $(az monitor log-analytics workspace show \
+    --resource-group continuation-rg --workspace-name continuation-logs \
+    --query customerId -o tsv) \
+  --analytics-query "ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'continuation' | project TimeGenerated, Log_s | order by TimeGenerated desc | limit 50" \
+  -o table
+```
+
+```bash
 # Staging: https://continuation-staging.fly.dev
 fly ssh console --app continuation-staging --command "/rails/bin/rails runner '...'"
 fly logs --app continuation-staging
