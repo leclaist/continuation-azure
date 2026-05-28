@@ -10,7 +10,7 @@ Show recent Azure production logs for the continuation app.
 
 ## What to do
 
-Fetch the workspace ID first (needed for all Log Analytics queries):
+The `az monitor log-analytics query` CLI extension is broken — use `az rest` to hit the Log Analytics API directly. Fetch the workspace ID first:
 
 ```bash
 WORKSPACE_ID=$(az monitor log-analytics workspace show \
@@ -28,51 +28,56 @@ az containerapp logs show \
   --follow
 ```
 
-### errors
+### errors (4xx/5xx from Rails request logs)
 
 ```bash
-az monitor log-analytics query \
-  --workspace "$WORKSPACE_ID" \
-  --analytics-query "ContainerAppConsoleLogs_CL
-    | where ContainerAppName_s == 'continuation'
-    | extend log = parse_json(Log_s)
-    | where log.status >= 400
-    | project TimeGenerated, status=log.status, method=log.method, path=log.path, duration=log.duration, exception=log.exception
-    | order by TimeGenerated desc
-    | limit 50" \
-  -o table
+az rest --method POST \
+  --url "https://api.loganalytics.io/v1/workspaces/${WORKSPACE_ID}/query" \
+  --headers "Content-Type=application/json" \
+  --body "{\"query\": \"ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'continuation' | extend log = parse_json(Log_s) | where toint(log.status) >= 400 and isnotempty(log.controller) | project TimeGenerated, status=log.status, method=log.method, path=log.path, duration=log.duration, controller=log.controller, exception=log.exception | order by TimeGenerated desc | limit 50\"}" \
+  --resource "https://api.loganalytics.io" \
+  -o json
 ```
 
-### slow
+### slow (requests over 1000ms)
 
 ```bash
-az monitor log-analytics query \
-  --workspace "$WORKSPACE_ID" \
-  --analytics-query "ContainerAppConsoleLogs_CL
-    | where ContainerAppName_s == 'continuation'
-    | extend log = parse_json(Log_s)
-    | where todouble(log.duration) > 1000
-    | project TimeGenerated, duration=log.duration, method=log.method, path=log.path, controller=log.controller, action=log.action
-    | order by TimeGenerated desc
-    | limit 50" \
-  -o table
+az rest --method POST \
+  --url "https://api.loganalytics.io/v1/workspaces/${WORKSPACE_ID}/query" \
+  --headers "Content-Type=application/json" \
+  --body "{\"query\": \"ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'continuation' | extend log = parse_json(Log_s) | where todouble(log.duration) > 1000 and isnotempty(log.controller) | project TimeGenerated, duration=log.duration, method=log.method, path=log.path, controller=log.controller, action=log.action | order by TimeGenerated desc | limit 50\"}" \
+  --resource "https://api.loganalytics.io" \
+  -o json
 ```
 
-### default (last N lines)
+### default (last N lines, Rails request logs only)
 
-Use the limit from the argument if provided, defaulting to 50:
+Replace `<N>` with the argument or 50:
 
 ```bash
-az monitor log-analytics query \
-  --workspace "$WORKSPACE_ID" \
-  --analytics-query "ContainerAppConsoleLogs_CL
-    | where ContainerAppName_s == 'continuation'
-    | extend log = parse_json(Log_s)
-    | where isnotempty(log.method)
-    | project TimeGenerated, status=log.status, method=log.method, path=log.path, duration=log.duration, controller=log.controller
-    | order by TimeGenerated desc
-    | limit <N>" \
-  -o table
+az rest --method POST \
+  --url "https://api.loganalytics.io/v1/workspaces/${WORKSPACE_ID}/query" \
+  --headers "Content-Type=application/json" \
+  --body "{\"query\": \"ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'continuation' | extend log = parse_json(Log_s) | where isnotempty(log.controller) | project TimeGenerated, status=log.status, method=log.method, path=log.path, duration=log.duration, controller=log.controller | order by TimeGenerated desc | limit <N>\"}" \
+  --resource "https://api.loganalytics.io" \
+  -o json
 ```
 
-Print the results. If the query returns no rows, note that logs may take a few minutes to appear in the workspace after the app first receives traffic, and that non-request logs (startup messages, background errors) won't have a `method` field — omit the `isnotempty(log.method)` filter to see all log lines including plain-text ones.
+Parse and print the results in a readable table using Python:
+
+```bash
+... | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+rows = data['tables'][0]['rows']
+cols = [c['name'] for c in data['tables'][0]['columns']]
+print('  '.join(f'{c:<30}' if i == 0 else f'{c:<12}' for i, c in enumerate(cols)))
+print('-' * 100)
+for r in rows:
+    print('  '.join(f'{str(v or \"\"):<30}' if i == 0 else f'{str(v or \"\"):<12}' for i, v in enumerate(r)))
+"
+```
+
+If the query returns no rows, note that:
+- Logs may take a few minutes to appear after the app first receives traffic
+- The `isnotempty(log.controller)` filter selects Rails lograge lines only — remove it to also see Thruster proxy logs and Puma startup messages
