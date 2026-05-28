@@ -119,3 +119,4 @@ bin/rails test   # confirm nothing broke
 | `/add-environment` | Set up secrets for a new Fly.io environment from local credentials |
 | `/azure-setup` | Set up or update Azure infrastructure and wire it into the GitHub Actions deploy pipeline |
 | `/set-year-bg <year> <source>` | Set or replace the background image for a given year's theme (URL or local file path) |
+| `/view-logs [n\|follow]` | Show last N Azure production log lines (default 50), or tail live with `follow` |
