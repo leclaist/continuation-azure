@@ -1,17 +1,15 @@
 name: Deploy to Azure
 
 on:
-  workflow_run:
-    workflows: ["Deploy"]
-    types: [completed]
-    branches: [main]
+  push:
+    branches:
+      - main
 
 jobs:
   deploy-azure:
     name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
     concurrency: deploy-azure
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -34,9 +32,17 @@ jobs:
             --resource-group continuation-rg \
             --image continuationacr.azurecr.io/continuation:${{ github.sha }}
 
-      - name: Get app URL
+      - name: Smoke test
         run: |
-          az containerapp show \
-            --name continuation \
-            --resource-group continuation-rg \
-            --query properties.configuration.ingress.fqdn -o tsv
+          echo "Waiting for Azure to become healthy..."
+          for i in $(seq 1 10); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://christineclaymoreau.lol || echo "000")
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "Azure deployment is healthy"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Azure failed to return 200 after 10 attempts"
+          exit 1

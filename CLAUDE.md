@@ -58,7 +58,9 @@ fly logs
 ## CI / automation
 
 - **CI** runs on every PR and push: Brakeman, bundler-audit, importmap audit, RuboCop, tests
-- **Deploy pipeline** (push to `main`): staging deploy → smoke test `continuation-staging.fly.dev` → production deploy. Production never deploys if staging smoke test fails.
+- **Push/merge to `main`** triggers two independent deploy pipelines in parallel:
+  - **Fly.io**: staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
+  - **Azure**: build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
 - **Dependabot PRs** auto-merge when CI passes
 - **Weekly Monday 9am UTC**: `Update Ruby and dependencies` workflow updates Ruby + gems, opens and merges a PR automatically
 
