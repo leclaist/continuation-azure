@@ -45,7 +45,8 @@ Rails.application.configure do
   config.lograge.formatter = Lograge::Formatters::Json.new
   config.lograge.custom_options = lambda do |event|
     opts = {}
-    opts[:request_id] = event.payload.dig(:headers, "action_dispatch.request_id")
+    headers = event.payload[:headers]
+    opts[:request_id] = headers.env["action_dispatch.request_id"] if headers.respond_to?(:env)
     opts[:exception]  = event.payload[:exception].first if event.payload[:exception]
     opts.compact
   end
