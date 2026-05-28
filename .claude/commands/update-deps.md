@@ -7,6 +7,7 @@ Run `bin/bundler-audit` and capture the output. If vulnerabilities are found, sh
 - Read `.ruby-version` for the current version
 - Run: `curl -fsSL "https://endoflife.date/api/ruby.json" | jq -r --arg today "$(date +%Y-%m-%d)" '[.[] | select(.eol == false or .eol > $today)] | sort_by(.latest | split(".") | map(tonumber)) | last | .latest'`
 - If the latest differs from current, update `.ruby-version` with the new version
+- Also update the `ARG RUBY_VERSION=` line in `Dockerfile` to match — the Docker image must run the same Ruby as the app
 
 ## 3. Update gems
 Run:
@@ -20,7 +21,7 @@ Run `bin/bundler-audit` again. If vulnerabilities remain after updating, show th
 
 ## 5. Report and commit
 - Run `git diff --stat` to show what changed
-- Commit with: `git add .ruby-version Gemfile.lock && git commit -m "chore: update Ruby and gem dependencies"`
+- Commit with: `git add .ruby-version Dockerfile Gemfile.lock && git commit -m "chore: update Ruby and gem dependencies"`
 - Push with: `git push`
 
 Keep the summary short: Ruby old → new, Rails version after update, number of gems changed.
