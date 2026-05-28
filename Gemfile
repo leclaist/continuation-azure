@@ -44,6 +44,7 @@ gem "google-apis-drive_v3"
 gem "googleauth"
 gem "anthropic"
 gem "nokogiri"
+gem "lograge"
 
 group :development, :test do
   gem "dotenv-rails"

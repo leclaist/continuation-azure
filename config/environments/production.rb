@@ -33,12 +33,22 @@ Rails.application.configure do
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
 
-  # Log to STDOUT with the current request id as a default log tag.
-  config.log_tags = [ :request_id ]
-  config.logger   = ActiveSupport::TaggedLogging.logger(STDOUT)
-
-  # Change to "debug" to log everything (including potentially personally-identifiable information!).
+  # Log to STDOUT. Level configurable via RAILS_LOG_LEVEL env var.
+  config.logger    = ActiveSupport::Logger.new($stdout)
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
+
+  # Structured JSON request logging for Azure Log Analytics.
+  # Each request becomes one JSON line queryable via parse_json(Log_s) in KQL.
+  # Non-request logs (Rails.logger.* calls) remain as plain text on stdout and
+  # also land in ContainerAppConsoleLogs_CL.
+  config.lograge.enabled   = true
+  config.lograge.formatter = Lograge::Formatters::Json.new
+  config.lograge.custom_options = lambda do |event|
+    opts = { time: event.time.utc.iso8601 }
+    opts[:request_id] = event.payload.dig(:headers, "action_dispatch.request_id")
+    opts[:exception]  = event.payload[:exception].first if event.payload[:exception]
+    opts.compact
+  end
 
   # Prevent health checks from clogging up the logs.
   config.silence_healthcheck_path = "/up"
