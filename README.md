@@ -18,7 +18,7 @@ Entries are accessed at `/:year/:slug`, e.g. `/2008/nov-14-2008`.
 |---|---|
 | Content storage | Google Drive (read-only, service account) |
 | Database | SQLite via Solid Cache / Queue / Cable |
-| Deployment | Fly.io, two environments (staging + production), `ord` region |
+| Deployment | Fly.io (staging + production CI gate) + Azure Container Apps (production, `christineclaymoreau.lol`) |
 | Asset pipeline | Propshaft + importmap |
 | Background jobs | Solid Queue |
 
@@ -39,6 +39,7 @@ Entries are accessed at `/:year/:slug`, e.g. `/2008/nov-14-2008`.
 | `GOOGLE_DRIVE_FOLDER_ID` | ID of the Drive folder containing journal files |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Full service account JSON as a single-line string |
 | `ANTHROPIC_API_KEY` | Enables AI comment generation (optional) |
+| `ADMIN_TOKEN` | Secret for `POST /admin/clear_comments` (optional, omit to disable endpoint) |
 
 See `.env.example`. In development, copy it to `.env` and fill in values.
 
@@ -97,53 +98,54 @@ SQLite data is stored on a persistent Fly volume (`/data`) in each environment. 
 
 ### Azure Container Apps
 
-A second deployment that triggers automatically after Fly.io staging passes its smoke test — so Fly staging acts as a quality gate for Azure too.
+The production deployment. Deployed manually — there is no automated Azure deploy in CI.
 
 | | |
 |---|---|
 | URL | `https://christineclaymoreau.lol` |
 | Region | East US |
 | Registry | Azure Container Registry (`continuationacr`, Basic SKU) |
-| Replicas | 1 min / 1 max (always warm, no cold starts) |
+| Replicas | 0 min / 1 max (scales to zero when idle, ~$6/month) |
 
-The workflow lives in `.github/workflows/azure-deploy.yml`. On each successful Fly deploy it builds a new image tagged with the git SHA, pushes it to ACR, and updates the container app. Required GitHub secret: `AZURE_CREDENTIALS` (service principal JSON).
+**Deploy** — build and push a new image, then restart the active revision to pull it:
 
 ```bash
-# Manual deploy
 az acr build --registry continuationacr --image continuation:latest .
-az containerapp update \
+az containerapp revision restart \
   --name continuation \
   --resource-group continuation-rg \
-  --image continuationacr.azurecr.io/continuation:latest
+  --revision $(az containerapp revision list --name continuation --resource-group continuation-rg --query "[0].name" -o tsv)
+```
 
-# Logs
+**Logs and health:**
+
+```bash
 az containerapp logs show --name continuation --resource-group continuation-rg --tail 50
-
-# Check revision health
 az containerapp revision list --name continuation --resource-group continuation-rg -o table
 ```
 
-**SQLite** uses local ephemeral container storage (`/rails/storage/`), not a mounted volume. Azure Files SMB does not support the POSIX file locking SQLite requires. The visitor counter and cached AI comments reset on container restart — both regenerate automatically.
-
-**Thruster port config** — the container runs as a non-root user, so Thruster cannot bind to port 80. It is configured to listen on port 3000 (`HTTP_PORT=3000`) and proxy internally to Puma on port 3001 (`TARGET_PORT=3001`). The Container Apps ingress routes to port 3000.
-
-**`GOOGLE_SERVICE_ACCOUNT_JSON` secret** — must be stored as compact single-line JSON (no surrounding quotes, no literal newlines). The `.env` file typically has it pretty-printed and wrapped in single quotes, which will not parse correctly. Use this to set it correctly:
+**Admin endpoint** — clear cached AI comments so they regenerate on next visit:
 
 ```bash
-python3 -c "
-import json, re
-content = open('.env').read()
-m = re.search(r\"GOOGLE_SERVICE_ACCOUNT_JSON='(.*?)'\", content, re.DOTALL)
-print(json.dumps(json.loads(m.group(1))), end='')
-" > /tmp/sa.json
-
-az containerapp secret set \
-  --name continuation \
-  --resource-group continuation-rg \
-  --secrets "google-service-account-json=$(cat /tmp/sa.json)" && rm /tmp/sa.json
+ADMIN_TOKEN=$(grep 'admin_token' infra/terraform.tfvars | sed 's/.*= "\(.*\)"/\1/')
+curl -s -X POST https://christineclaymoreau.lol/admin/clear_comments \
+  -H "X-Admin-Token: $ADMIN_TOKEN"
 ```
 
-Terraform for the Azure infrastructure lives in `infra/`.
+**Infrastructure** is managed with Terraform in `infra/`. To generate `infra/terraform.tfvars` (gitignored, contains secrets):
+
+```bash
+./infra/setup-tfvars.sh /path/to/service-account.json
+cd infra && terraform apply
+```
+
+After changing secrets via Terraform, restart the revision to pick them up (Azure does not restart automatically on secret-only changes).
+
+**SQLite** uses local ephemeral container storage (`/rails/storage/`), not a mounted volume. Azure Files SMB does not support the POSIX file locking SQLite requires. The visitor counter and cached AI comments reset on container restart — both regenerate automatically.
+
+**Cold starts** — with `min_replicas=0` the container shuts down after a period of inactivity. First request after idle takes ~5–15 seconds. Subsequent requests are fast.
+
+**Thruster port config** — the container runs as a non-root user, so Thruster cannot bind to port 80. It listens on port 3000 (`HTTP_PORT=3000`) and proxies internally to Puma on port 3001 (`TARGET_PORT=3001`). The Container Apps ingress routes to port 3000.
 
 ## CI / dependency automation
 
