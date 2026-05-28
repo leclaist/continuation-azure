@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Auto-correct Ruby style issues on staged files, then block the commit if
+# any offenses remain that rubocop couldn't fix automatically.
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rb$' || true)
+[ -z "$STAGED" ] && exit 0
+
+echo "rubocop: auto-correcting staged Ruby files..."
+
+# shellcheck disable=SC2086
+bin/rubocop -A --no-color $STAGED
+
+# Re-stage any files rubocop modified
+# shellcheck disable=SC2086
+git add $STAGED
+
+# Fail the commit if offenses remain that couldn't be auto-corrected
+# shellcheck disable=SC2086
+if ! bin/rubocop --no-color $STAGED >/dev/null 2>&1; then
+  echo ""
+  echo "rubocop: offenses remain that could not be auto-corrected — fix them before committing"
+  # shellcheck disable=SC2086
+  bin/rubocop --no-color $STAGED
+  exit 1
+fi

@@ -19,6 +19,12 @@ bin/bundler-audit        # CVE check
 git push                 # triggers CI + auto-deploy to Fly
 ```
 
+After a fresh clone, activate the git hooks:
+```bash
+git config core.hooksPath .githooks
+```
+This enables a pre-commit hook that auto-corrects rubocop offenses on staged files and blocks the commit if any can't be fixed automatically.
+
 ```bash
 # Staging: https://continuation-staging.fly.dev
 fly ssh console --app continuation-staging --command "/rails/bin/rails runner '...'"
