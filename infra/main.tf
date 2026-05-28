@@ -269,6 +269,58 @@ resource "azurerm_container_app" "main" {
 # via the CLI commands above and lives outside Terraform state.
 
 # ---------------------------------------------------------------------------
+# Alerting
+# ---------------------------------------------------------------------------
+
+resource "azurerm_monitor_action_group" "email" {
+  name                = "continuation-alerts"
+  resource_group_name = azurerm_resource_group.main.name
+  short_name          = "cont-email"
+
+  email_receiver {
+    name                    = "admin"
+    email_address           = var.alert_email
+    use_common_alert_schema = true
+  }
+}
+
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "http_500" {
+  name                = "continuation-500-errors"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  description         = "Fires when any HTTP 5xx response is logged by the Rails app"
+
+  scopes               = [azurerm_log_analytics_workspace.main.id]
+  evaluation_frequency = "PT5M"
+  window_duration      = "PT5M"
+  severity             = 1
+  auto_mitigation_enabled = true
+
+  criteria {
+    query = <<-QUERY
+      ContainerAppConsoleLogs_CL
+      | where ContainerAppName_s == "continuation"
+      | extend log = parse_json(Log_s)
+      | where toint(log.status) >= 500
+      | where isnotempty(log.controller)
+    QUERY
+
+    time_aggregation_method = "Count"
+    threshold               = 0
+    operator                = "GreaterThan"
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.email.id]
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
 

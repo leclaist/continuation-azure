@@ -29,6 +29,11 @@ variable "anthropic_api_key" {
   default     = ""
 }
 
+variable "alert_email" {
+  description = "Email address to notify when alerts fire (e.g. HTTP 500 errors)"
+  type        = string
+}
+
 variable "custom_domain_cert_id" {
   description = "Azure resource ID of the managed certificate for christineclaymoreau.lol. Obtain after running the hostname bind CLI command (see comment in main.tf)."
   type        = string
