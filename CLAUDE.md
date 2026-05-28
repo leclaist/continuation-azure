@@ -63,6 +63,26 @@ fly logs
 | `FLY_API_TOKEN` | Production deploy |
 | `FLY_STAGING_API_TOKEN` | Staging deploy (scoped to `continuation-staging`) |
 
+## Testing
+
+`bin/rails test` runs the full suite. Tests live in `test/` mirroring `app/` structure.
+
+**When to add or update tests:**
+- New controller action → add a test in `test/controllers/`
+- New model method or validation → add a test in `test/models/`
+- New helper method with logic → add a test in `test/helpers/`
+- Changed behaviour → update the corresponding test
+
+**Patterns in use:**
+- Controllers: stub `GoogleDriveService.new` (and `CommentGeneratorService.new` for entries) using the `stub` helper in `test_helper.rb`. Use `fake_entry` and `fake_drive_service` to build doubles.
+- Models: plain `ActiveSupport::TestCase` — transactional fixtures handle teardown automatically.
+- Helpers: include the module directly in an `ActiveSupport::TestCase` subclass.
+- `with_env` in `EntriesControllerTest` is the pattern for temporarily setting ENV vars in a test.
+
+**What's intentionally not tested:**
+- `GoogleDriveService` (pure API adapter)
+- `CommentGeneratorService#generate` (calls Anthropic API — use caching layer tests instead)
+
 ## Skills
 
 | Skill | What it does |
