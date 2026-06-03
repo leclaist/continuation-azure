@@ -12,6 +12,10 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+      branch: ${{ steps.commit.outputs.branch }}
+      pr_number: ${{ steps.pr.outputs.number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -63,7 +67,8 @@ jobs:
         run: |
           git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Open and merge pull request
+      - name: Commit and push
+        id: commit
         if: steps.diff.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
@@ -74,10 +79,18 @@ jobs:
           git add .ruby-version Gemfile.lock
           git commit -m "chore: update Ruby to ${{ steps.ruby.outputs.latest }} and gem dependencies"
           git push --force origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Open pull request
+        id: pr
+        if: steps.diff.outputs.changed == 'true'
+        run: |
           rails_version=$(cat /tmp/rails-version.txt)
           pre_audit=$(cat /tmp/pre-audit.txt)
           post_audit=$(cat /tmp/post-audit.txt)
+          branch="${{ steps.commit.outputs.branch }}"
 
           existing=$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')
           if [ -z "$existing" ]; then
@@ -104,6 +117,73 @@ jobs:
           fi
 
           pr_number=$(gh pr list --head "$branch" --json number --jq '.[0].number')
-          gh pr merge "$pr_number" --squash --delete-branch
+          echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  wait-for-ci:
+    name: Wait for CI
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Wait for CI checks to pass
+        run: |
+          pr_number="${{ needs.update.outputs.pr_number }}"
+          echo "Waiting for CI checks on PR #$pr_number to start..."
+          for i in $(seq 1 12); do
+            count=$(gh pr checks "$pr_number" 2>/dev/null | grep -c '.' || echo 0)
+            [ "$count" -gt 0 ] && break
+            echo "No checks yet ($i/12), retrying in 10s..."
+            sleep 10
+          done
+          echo "Checks started, watching for completion..."
+          gh pr checks "$pr_number" --watch --fail-fast
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-staging:
+    name: Deploy to Fly staging
+    needs: [update, wait-for-ci]
+    runs-on: ubuntu-latest
+    concurrency: deploy-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.update.outputs.branch }}
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config fly.staging.toml
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_STAGING_API_TOKEN }}
+
+  verify-staging:
+    name: Verify staging
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test
+        run: |
+          echo "Waiting for staging to wake up..."
+          for i in $(seq 1 10); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://continuation-staging.fly.dev || echo "000")
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "Staging is healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Staging failed to return 200 after 10 attempts"
+          exit 1
+
+  merge:
+    name: Merge to main
+    needs: [update, verify-staging]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge pull request
+        run: |
+          gh pr merge "${{ needs.update.outputs.pr_number }}" --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
