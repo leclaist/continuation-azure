@@ -98,7 +98,7 @@ SQLite data is stored on a persistent Fly volume (`/data`) in each environment. 
 
 ### Azure Container Apps
 
-The production deployment. Deployed manually — there is no automated Azure deploy in CI.
+The production deployment. Deploys automatically on push to `main` via `azure-deploy.yml` — builds a new image in ACR, deploys it to Container Apps, and smoke tests the live URL.
 
 | | |
 |---|---|
@@ -153,6 +153,6 @@ After changing secrets via Terraform, restart the revision to pick them up (Azur
 
 **Dependabot** opens weekly PRs for gem and GitHub Actions updates. These are automatically approved and squash-merged once CI passes.
 
-**Weekly dependency update** (`Update Ruby and dependencies` workflow, Mondays 9am UTC) — checks for CVEs in current gems, updates `.ruby-version` to the latest stable Ruby, runs `bundle update --all`, re-checks for CVEs, then opens and immediately merges a PR if anything changed.
+**Weekly dependency update** (`Update Ruby and dependencies` workflow, Mondays 9am UTC) — checks for CVEs in current gems, updates `.ruby-version` to the latest stable Ruby, runs `bundle update --all`, re-checks for CVEs, then opens a PR if anything changed. The PR is gated: CI (Brakeman, bundler-audit, importmap audit, RuboCop, tests) must pass, then the updated code is deployed to Fly staging and smoke tested. Only after staging is healthy does the PR auto-merge to `main`, which triggers the normal production deploy pipelines.
 
 The `/update-deps` Claude Code skill runs the same update process locally.
