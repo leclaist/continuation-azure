@@ -121,31 +121,44 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  wait-for-ci:
-    name: Wait for CI
+  ci:
+    name: Run CI
     needs: update
     if: needs.update.outputs.changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Wait for CI checks to pass
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update.outputs.branch }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Security scan
+        run: bin/brakeman --no-pager
+
+      - name: Gem CVE scan
+        run: bin/bundler-audit
+
+      - name: JS CVE scan
+        run: bin/importmap audit
+
+      - name: Lint
+        run: bin/rubocop -f github
+
+      - name: Tests
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          pr_number="${{ needs.update.outputs.pr_number }}"
-          echo "Waiting for CI checks on PR #$pr_number to start..."
-          for i in $(seq 1 12); do
-            gh pr checks "$pr_number" 2>/dev/null | grep -q '.' && break
-            echo "No checks yet ($i/12), retrying in 10s..."
-            sleep 10
-          done
-          echo "Checks started, watching for completion..."
-          gh pr checks "$pr_number" --watch --fail-fast
+          RAILS_ENV: test
+        run: bin/rails db:test:prepare test
 
   deploy-staging:
     name: Deploy to Fly staging
-    needs: [update, wait-for-ci]
+    needs: [update, ci]
     runs-on: ubuntu-latest
     concurrency: deploy-staging
     steps:
@@ -183,7 +196,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Merge pull request
-        run: |
-          gh pr merge "${{ needs.update.outputs.pr_number }}" --squash --delete-branch
+        run: gh pr merge "${{ needs.update.outputs.pr_number }}" --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
