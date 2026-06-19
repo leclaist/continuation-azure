@@ -133,8 +133,7 @@ jobs:
           pr_number="${{ needs.update.outputs.pr_number }}"
           echo "Waiting for CI checks on PR #$pr_number to start..."
           for i in $(seq 1 12); do
-            count=$(gh pr checks "$pr_number" 2>/dev/null | grep -c '.' || echo 0)
-            [ "$count" -gt 0 ] && break
+            gh pr checks "$pr_number" 2>/dev/null | grep -q '.' && break
             echo "No checks yet ($i/12), retrying in 10s..."
             sleep 10
           done
