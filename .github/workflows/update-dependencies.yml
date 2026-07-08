@@ -200,3 +200,47 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+
+  deploy-azure:
+    name: Deploy to Azure
+    needs: merge
+    runs-on: ubuntu-latest
+    concurrency: deploy-azure
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push image to ACR
+        run: |
+          az acr build \
+            --registry continuationacr \
+            --image continuation:${{ github.sha }} \
+            --image continuation:latest \
+            .
+
+      - name: Deploy to Container Apps
+        run: |
+          az containerapp update \
+            --name continuation \
+            --resource-group continuation-rg \
+            --image continuationacr.azurecr.io/continuation:${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          echo "Waiting for Azure to become healthy..."
+          for i in $(seq 1 10); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://christineclaymoreau.lol || echo "000")
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "Azure deployment is healthy"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Azure failed to return 200 after 10 attempts"
+          exit 1
