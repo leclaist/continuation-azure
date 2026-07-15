@@ -32,6 +32,32 @@ Entries are accessed at `/:year/:slug`, e.g. `/2008/nov-14-2008`.
 
 **Visitor counter** — stored in SQLite (`visitor_counters` table), incremented on each homepage load.
 
+**Voice recordings** — an entry can optionally include an audio recording alongside its text. Drop an mp3 into the same Drive folder as the entry's doc, named after the entry's slug (`dec-24-2008.mp3` for the `Dec 24, 2008` entry). The entry page picks it up automatically and streams it through a custom-styled player; entries without a matching file render exactly as before. Audio is streamed on request (`GET /:year/:slug/audio`), never cached in full — only the file lookup (`drive/audio_by_slug`) is cached, same as the text entry list.
+
+### Syncing recordings from Mac Voice Memos
+
+`scripts/voice-memo-sync/` automates the drop-a-file-in-Drive step for recordings made in macOS Voice Memos:
+
+1. Record a memo, then **rename it** (in Voice Memos) to match the target entry's slug — e.g. `Dec-24-2008`. Untitled memos are left alone; renaming is the deliberate signal that a memo belongs to a specific entry.
+2. `sync.sh` converts it to mono 128kbps mp3 and drops it into the Drive-synced folder as `<slug>.mp3`, without overwriting an existing file for that slug.
+3. A `launchd` agent runs it every 15 minutes, so this happens without any manual step beyond the rename.
+
+**One-time setup** (per Mac):
+
+```bash
+brew install ffmpeg
+cp scripts/voice-memo-sync/com.continuation.voicememosync.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.continuation.voicememosync.plist
+```
+
+Voice Memos' storage is protected the same way Photos/Mail are — grant **Full Disk Access** (System Settings → Privacy & Security) to both Terminal.app (for manual runs) and `/bin/bash` (for the scheduled `launchd` job; add it via the folder picker with `Cmd+Shift+G` → `/bin/bash`).
+
+Useful flags: `sync.sh --list` (peek at recent memos and their titles, read-only), `sync.sh --dry-run` (show what would sync without converting anything). Logs go to `~/Library/Logs/continuation-voice-memo-sync.log`.
+
+Apple doesn't document the Voice Memos database schema, so the script discovers the relevant table/columns at runtime instead of hardcoding names, and fails loudly with a clear log message if it can't find what it expects, rather than silently doing nothing.
+
+The Drive folder path is currently hardcoded in `sync.sh` (`DRIVE_FOLDER`) to match wherever Google Drive for desktop mirrors it locally — update that if syncing from a different Mac/account.
+
 ## Environment variables
 
 | Variable | Description |

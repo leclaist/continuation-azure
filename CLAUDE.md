@@ -8,6 +8,7 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 - **Database**: SQLite — stores only visitor counter and cached AI-generated comments.
 - **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
 - **Ruby**: `.ruby-version` is `4.0.5` (production). Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
+- **Rails cache persists across deploys**: `Rails.cache` (`drive/*` keys, 1hr TTL) is backed by a SQLite db (`storage/production_cache.sqlite3`) on the persistent Fly volume — deploying a fix to cache-*populating* logic does not invalidate what's already cached. Clear manually if needed: `fly ssh console --command "/rails/bin/rails runner 'Rails.cache.delete(\"drive/files_by_year\")'"` (swap the key, or add `--app continuation-staging` for staging).
 
 ## Commands
 
@@ -63,6 +64,8 @@ fly logs
 **Year theming**: `data-year` attribute on `<body>` drives CSS. 2008 = MySpace/emo, 2009 = cosmic/neon. Defined in `app/assets/stylesheets/application.css` and `app/helpers/year_theme_helper.rb`.
 
 **Banner ads**: configured per-year in `config/banner_ads.yml`, rendered via `app/views/shared/_banner_ad.html.erb`.
+
+**Voice recordings**: optional per-entry audio, looked up via `GoogleDriveService#audio_for(slug)` (cache key `drive/audio_by_slug`) and streamed through `GET /:year/:slug/audio` (`entries#audio`, `ActionController::Live` — never buffers the whole file in memory). Rendered via `app/views/shared/_audio_player.html.erb` + `audio_player_controller.js` (Stimulus; `disconnect()` pauses playback on Turbo navigation away from the entry). `list_files` filters to `mimeType = 'application/vnd.google-apps.document'` specifically so audio files sharing the same Drive folder aren't mistaken for journal entries — don't drop that filter. `scripts/voice-memo-sync/` (see README) automates getting recordings from macOS Voice Memos into the Drive folder.
 
 ## Environment variables
 
