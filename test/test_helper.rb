@@ -39,12 +39,14 @@ def fake_entry(year: 2008, month: 11, day: 14)
 end
 
 # Minimal Drive service double. Override keyword args to customise return values.
-def fake_drive_service(by_year: {}, word_count: 0, for_year: [], by_slug: nil, html: "<p>test</p>")
+def fake_drive_service(by_year: {}, word_count: 0, for_year: [], by_slug: nil, html: "<p>test</p>", audio: nil)
   svc = Object.new
   svc.define_singleton_method(:files_by_year)  { by_year }
   svc.define_singleton_method(:total_word_count) { word_count }
   svc.define_singleton_method(:files_for_year) { |_| for_year }
   svc.define_singleton_method(:file_by_slug)   { |_, _| by_slug }
   svc.define_singleton_method(:content_html)   { |_| html }
+  svc.define_singleton_method(:audio_for)      { |_| audio }
+  svc.define_singleton_method(:stream_audio)   { |_, &block| block.call("fake audio bytes") }
   svc
 end

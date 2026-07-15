@@ -672,6 +672,56 @@ a:hover {
 }
 
 /* ------------------------------------------------------------------ */
+/* Audio player                                                        */
+/* ------------------------------------------------------------------ */
+
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 2rem;
+}
+
+.audio-player__toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.audio-player__track {
+  flex: 1;
+  height: 3px;
+  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.audio-player__bar {
+  height: 100%;
+  width: 0%;
+  background: var(--color-accent);
+}
+
+.audio-player__time {
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  opacity: 0.8;
+  min-width: 34px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Comments                                                            */
 /* ------------------------------------------------------------------ */
 

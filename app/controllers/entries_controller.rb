@@ -1,4 +1,6 @@
 class EntriesController < ApplicationController
+  include ActionController::Live
+
   def show
     service = GoogleDriveService.new
     @year = params[:year].to_i
@@ -18,5 +20,20 @@ class EntriesController < ApplicationController
     else
       @comments = []
     end
+  end
+
+  def audio
+    service = GoogleDriveService.new
+    file = service.audio_for(params[:slug])
+
+    return head :not_found unless file
+
+    response.headers["Content-Type"] = file.mime_type
+    response.headers["Accept-Ranges"] = "bytes"
+    response.headers["Last-Modified"] = Time.now.httpdate # avoid Rack::ETag buffering the stream
+
+    service.stream_audio(file.id) { |chunk| response.stream.write(chunk) }
+  ensure
+    response.stream.close
   end
 end

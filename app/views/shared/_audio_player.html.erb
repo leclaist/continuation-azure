@@ -1,0 +1,12 @@
+<% audio = GoogleDriveService.new.audio_for(slug) %>
+<% if audio %>
+  <div class="audio-player" data-controller="audio-player" data-audio-player-src-value="<%= entry_audio_path(year: year, slug: slug) %>">
+    <button class="audio-player__toggle" data-audio-player-target="toggle" data-action="audio-player#toggle" aria-label="Play recording">
+      <span class="audio-player__icon" data-audio-player-target="icon">▶</span>
+    </button>
+    <div class="audio-player__track">
+      <div class="audio-player__bar" data-audio-player-target="bar"></div>
+    </div>
+    <span class="audio-player__time" data-audio-player-target="time">0:00</span>
+  </div>
+<% end %>

@@ -49,6 +49,34 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "GET /:year/:slug/audio returns 404 when no matching audio file exists" do
+    svc = fake_drive_service(by_slug: @entry, html: "<p>hello</p>", audio: nil)
+    GoogleDriveService.stub(:new, svc) do
+      get entry_audio_url(2008, @entry.slug)
+      assert_response :not_found
+    end
+  end
+
+  test "GET /:year/:slug/audio streams audio bytes with the file's mime type when present" do
+    audio_file = OpenStruct.new(id: "fake-audio-id", mime_type: "audio/mpeg")
+    svc = fake_drive_service(by_slug: @entry, html: "<p>hello</p>", audio: audio_file)
+    GoogleDriveService.stub(:new, svc) do
+      get entry_audio_url(2008, @entry.slug)
+      assert_response :success
+      assert_equal "audio/mpeg", @response.media_type
+      assert_equal "fake audio bytes", @response.body
+    end
+  end
+
+  test "GET /:year/:slug renders no audio player markup when no audio file exists" do
+    svc = fake_drive_service(by_slug: @entry, html: "<p>hello</p>", audio: nil)
+    GoogleDriveService.stub(:new, svc) do
+      get entry_url(2008, @entry.slug)
+      assert_response :success
+      assert_select ".audio-player", count: 0
+    end
+  end
+
   private
 
   def with_env(vars)
