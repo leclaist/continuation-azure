@@ -109,7 +109,7 @@ class GoogleDriveService
 
   def list_files
     result = @drive.list_files(
-      q: "'#{FOLDER_ID}' in parents and trashed = false",
+      q: "'#{FOLDER_ID}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.document'",
       fields: "files(id, name)",
       page_size: 1000
     )
