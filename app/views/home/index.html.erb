@@ -1,18 +1,15 @@
 <% content_for :body_data, "home" %>
-<% content_for :head do %>
-  <style>
-    [data-page="home"] { background-image: url('<%= asset_path("aerial-map.png") %>'); }
-  </style>
-<% end %>
-<div class="home-card">
-  <h1>Christine Clay Moreau</h1>
+<h1>Christine Clay Moreau</h1>
+<p class="home-tagline">an archive, more or less</p>
 
-  <ul class="year-list">
-    <% @years.each do |year| %>
-      <li><%= link_to year, year_path(year: year) %></li>
-    <% end %>
-  </ul>
-</div>
+<ul class="year-list">
+  <% @years.each do |year| %>
+    <li>
+      <%= link_to year, year_path(year: year) %>
+      <span class="year-list__count"><%= pluralize(@entry_counts[year], "entry") %></span>
+    </li>
+  <% end %>
+</ul>
 
 <div class="home-stats">
   <div class="visitor-counter">
