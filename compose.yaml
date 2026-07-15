@@ -1,0 +1,20 @@
+# Local development only. Run `docker compose up` to start the app —
+# no local Ruby install, bundle install, or rbenv needed.
+#
+# Secrets (.env, config/master.key) are never baked into the image; they
+# reach the container only via the bind mount below, at runtime.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+    tty: true
+    stdin_open: true
+
+volumes:
+  bundle_cache:

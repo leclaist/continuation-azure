@@ -7,17 +7,21 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 - **Content source**: Google Drive folder (read-only, service account). Files are named by date. No content in the database.
 - **Database**: SQLite — stores only visitor counter and cached AI-generated comments.
 - **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
-- **Ruby**: `.ruby-version` is `4.0.5` (production). Local may differ — don't be surprised by rbenv errors when running generators.
+- **Ruby**: `.ruby-version` is `4.0.5` (production). Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
 
 ## Commands
 
+Local dev runs entirely in Docker — no local Ruby/bundle install needed. `.env` and `config/master.key` are bind-mounted in at runtime, never baked into the image.
+
 ```bash
-bin/dev                  # local dev server
-bin/rails test           # test suite
-bin/brakeman --no-pager  # static security analysis
-bin/bundler-audit        # CVE check
-git push                 # triggers CI + auto-deploy to Fly
+docker compose up                                # local dev server on http://localhost:3000
+docker compose exec web bin/rails test           # test suite
+docker compose exec web bin/brakeman --no-pager  # static security analysis
+docker compose exec web bin/bundler-audit        # CVE check
+git push                                         # triggers CI + auto-deploy to Fly
 ```
+
+(`web` is a one-off container — if `docker compose up` isn't already running, use `docker compose run --rm web <cmd>` instead of `exec`.)
 
 After a fresh clone, activate the git hooks:
 ```bash
@@ -86,7 +90,7 @@ fly logs
 
 ## Testing
 
-`bin/rails test` runs the full suite. Tests live in `test/` mirroring `app/` structure.
+`docker compose exec web bin/rails test` runs the full suite (or `docker compose run --rm web bin/rails test` if the app isn't already up). Tests live in `test/` mirroring `app/` structure.
 
 **When to add or update tests:**
 - New controller action → add a test in `test/controllers/`
@@ -102,8 +106,8 @@ fly logs
 
 **After writing or editing any code or tests, always run:**
 ```bash
-bin/rubocop -A   # auto-correct style issues
-bin/rails test   # confirm nothing broke
+docker compose exec web bin/rubocop -A   # auto-correct style issues
+docker compose exec web bin/rails test   # confirm nothing broke
 ```
 
 **What's intentionally not tested:**
