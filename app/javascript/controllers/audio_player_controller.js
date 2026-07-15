@@ -4,6 +4,10 @@ export default class extends Controller {
   static targets = ["toggle", "icon", "bar", "time"]
   static values = { src: String }
 
+  disconnect() {
+    if (this.audio) this.audio.pause()
+  }
+
   toggle() {
     if (!this.audio) this.buildAudio()
 
