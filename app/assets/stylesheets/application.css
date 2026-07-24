@@ -929,10 +929,9 @@ a:hover {
 /* ------------------------------------------------------------------ */
 
 [data-year="2009"] {
-  background-image:
-    radial-gradient(ellipse at 15% 25%, rgba(168, 85, 247, 0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 70%, rgba(59, 130, 246, 0.15) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 70%);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 [data-year="2009"] h1 {

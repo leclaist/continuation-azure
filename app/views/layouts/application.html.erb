@@ -30,6 +30,9 @@
     <% if content_for(:theme_year) == "2008" %>
       <style>[data-year="2008"] { background-image: url('<%= asset_path("bg-2008.jpg") %>'); }</style>
     <% end %>
+    <% if content_for(:theme_year) == "2009" %>
+      <style>[data-year="2009"] { background-image: url('<%= asset_path("bg-2009.jpg") %>'); }</style>
+    <% end %>
     <% if content_for(:body_data) == "home" %>
       <style>[data-page="home"] { background-image: url('<%= asset_path("starfield.jpg") %>'); }</style>
     <% end %>
