@@ -5,7 +5,7 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 ## Key facts
 
 - **Content source**: Google Drive folder (read-only, service account). Files are named by date. No content in the database.
-- **Database**: SQLite — stores only visitor counter and cached AI-generated comments.
+- **Database**: SQLite — stores only visitor counter, cached AI-generated comments, and the recurring commenter roster (identity + memory).
 - **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
 - **Ruby**: `.ruby-version` is `4.0.5` (production). Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
 - **Rails cache persists across deploys**: `Rails.cache` (`drive/*` keys, 1hr TTL) is backed by a SQLite db (`storage/production_cache.sqlite3`) on the persistent Fly volume — deploying a fix to cache-*populating* logic does not invalidate what's already cached. Clear manually if needed: `fly ssh console --command "/rails/bin/rails runner 'Rails.cache.delete(\"drive/files_by_year\")'"` (swap the key, or add `--app continuation-staging` for staging).
@@ -59,7 +59,9 @@ fly logs
 
 **GoogleDriveService** (`app/services/google_drive_service.rb`): all Drive access. Results cached 1hr (file list) and per-file (entry HTML). Cache key is `drive/file/:id`.
 
-**CommentGeneratorService** (`app/services/comment_generator_service.rb`): generates era-appropriate fake blog comments + reply threads via Claude Haiku. Comments are stored in `generated_comments` table with a SHA-256 hash of the entry HTML. Stale hash → regenerate. Requires `ANTHROPIC_API_KEY`.
+**CommentGeneratorService** (`app/services/comment_generator_service.rb`): generates era-appropriate fake blog comments + reply threads via Claude Haiku. Comments are stored in `generated_comments` table with a SHA-256 hash of the entry HTML. Stale hash → regenerate. Requires `ANTHROPIC_API_KEY`. Commenters are persistent identities backed by the `Commenter` model (`username`, `personality`, `memory_summary`) — the prompt is given the existing roster and asked to reuse it, updating each commenter's memory after every entry so opinions/relationships evolve across entries instead of resetting each time.
+
+**Admin endpoints** (`app/controllers/admin/maintenance_controller.rb`, gated by `ADMIN_TOKEN` via the `X-Admin-Token` header): `POST /admin/clear_comments` deletes `generated_comments` only — commenter roster/memory persists, so regenerated comments keep continuity. `POST /admin/refresh_comments` (`app/services/comments_refresh_service.rb`) wipes both `generated_comments` and `Commenter` and rebuilds every entry's comments oldest-to-newest, so use it when the generation prompt itself changes and you want continuity rebuilt cleanly from scratch.
 
 **Year theming**: `data-year` attribute on `<body>` drives CSS. 2008 = MySpace/emo, 2009 = cosmic/neon. Defined in `app/assets/stylesheets/application.css` and `app/helpers/year_theme_helper.rb`.
 
@@ -74,6 +76,7 @@ fly logs
 | `GOOGLE_DRIVE_FOLDER_ID` | Yes | Drive folder containing journal files |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Yes | Service account JSON (single-line string) |
 | `ANTHROPIC_API_KEY` | No | Enables AI comment generation |
+| `ADMIN_TOKEN` | No | Enables `POST /admin/clear_comments` and `POST /admin/refresh_comments` |
 
 ## CI / automation
 
@@ -115,14 +118,15 @@ docker compose exec web bin/rails test   # confirm nothing broke
 
 **What's intentionally not tested:**
 - `GoogleDriveService` (pure API adapter)
-- `CommentGeneratorService#generate` (calls Anthropic API — use caching layer tests instead)
+- `CommentGeneratorService#generate` and `CommentsRefreshService#call` (call the Anthropic API — use caching layer / controller stub tests instead)
 
 ## Skills
 
 | Skill | What it does |
 |---|---|
 | `/update-deps` | Audit, update Ruby + gems locally, commit and push |
-| `/clear-comments` | Delete all cached comments from production so they regenerate on next visit |
+| `/clear-comments` | Delete cached comments so they regenerate on next visit; commenter identities/memory are kept |
+| `/refresh-comments` | Wipe all comments *and* commenter memory, then regenerate every entry oldest-to-newest so continuity is rebuilt cleanly |
 | `/add-environment` | Set up secrets for a new Fly.io environment from local credentials |
 | `/azure-setup` | Set up or update Azure infrastructure and wire it into the GitHub Actions deploy pipeline |
 | `/set-year-bg <year> <source>` | Set or replace the background image for a given year's theme (URL or local file path) |
