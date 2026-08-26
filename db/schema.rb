@@ -10,14 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_26_071341) do
+  create_table "commenters", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "memory_summary"
+    t.text "personality"
+    t.datetime "updated_at", null: false
+    t.string "username"
+    t.index [ "username" ], name: "index_commenters_on_username", unique: true
+  end
+
   create_table "generated_comments", force: :cascade do |t|
     t.text "comments_json"
+    t.string "content_hash"
     t.datetime "created_at", null: false
     t.string "file_id"
     t.datetime "updated_at", null: false
     t.integer "year"
-    t.string "content_hash"
   end
 
   create_table "visitor_counters", force: :cascade do |t|

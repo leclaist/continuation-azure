@@ -6,5 +6,6 @@ Rails.application.routes.draw do
 
   namespace :admin do
     post "clear_comments", to: "maintenance#clear_comments"
+    post "refresh_comments", to: "maintenance#refresh_comments"
   end
 end
