@@ -42,7 +42,7 @@ class CommentGeneratorService
 
   def generate(year:, content_html:)
     voice = YEAR_VOICE[year] || DEFAULT_VOICE
-    plain_text = Nokogiri::HTML(content_html).text.strip.truncate(5000)
+    plain_text = Nokogiri::HTML(content_html).text.strip.truncate(100_000)
 
     prompt = <<~PROMPT
       You are generating fake blog comments for a personal journal entry from #{year}.
