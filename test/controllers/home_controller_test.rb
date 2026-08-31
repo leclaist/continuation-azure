@@ -9,12 +9,12 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "GET / lists years in reverse order" do
-    svc = fake_drive_service(by_year: { 2008 => [ fake_entry ], 2009 => [ fake_entry(year: 2009) ] })
+  test "GET / lists years oldest to most recent" do
+    svc = fake_drive_service(by_year: { 2009 => [ fake_entry(year: 2009) ], 2008 => [ fake_entry ] })
     GoogleDriveService.stub(:new, svc) do
       get root_url
-      assert_select "a[href='#{year_path(2009)}']"
-      assert_select "a[href='#{year_path(2008)}']"
+      assert_select "ul.year-list li:nth-child(1) a[href='#{year_path(2008)}']"
+      assert_select "ul.year-list li:nth-child(2) a[href='#{year_path(2009)}']"
     end
   end
 
