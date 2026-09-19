@@ -1,0 +1,44 @@
+name: TEMP Test notify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create throwaway PR as the bot
+        id: pr
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          branch="test/notify-check-$(date +%s)"
+          git checkout -b "$branch"
+          echo "test $(date)" >> /tmp/unused
+          git commit --allow-empty -m "test: throwaway PR to verify needs-review notification"
+          git push origin "$branch"
+          gh pr create --title "TEST: verify needs-review notification (safe to close)" \
+            --body "Throwaway PR created by a one-off workflow to verify the major-bump notification step actually works under the real Actions GITHUB_TOKEN. Safe to close/delete." \
+            --head "$branch"
+          number=$(gh pr list --head "$branch" --json number --jq '.[0].number')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Flag PR for manual review
+        run: |
+          gh label create "needs-review" --color B60205 \
+            --description "Blocked on a major gem version bump — needs manual review and merge" \
+            --force
+          gh pr edit "${{ steps.pr.outputs.number }}" \
+            --add-label "needs-review" \
+            --add-assignee leclaist \
+            --add-reviewer leclaist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
