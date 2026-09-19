@@ -49,8 +49,10 @@ jobs:
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
           echo "current=$(cat .ruby-version)" >> "$GITHUB_OUTPUT"
 
-      - name: Update .ruby-version
-        run: echo "${{ steps.ruby.outputs.latest }}" > .ruby-version
+      - name: Update .ruby-version and Dockerfiles
+        run: |
+          echo "${{ steps.ruby.outputs.latest }}" > .ruby-version
+          sed -i "s/^ARG RUBY_VERSION=.*/ARG RUBY_VERSION=${{ steps.ruby.outputs.latest }}/" Dockerfile Dockerfile.dev
 
       - name: Set up updated Ruby
         uses: ruby/setup-ruby@v1
@@ -163,7 +165,7 @@ jobs:
 
           branch="automated/dependencies-$(date +%Y-%m-%d)"
           git checkout -b "$branch"
-          git add .ruby-version Gemfile Gemfile.lock
+          git add .ruby-version Dockerfile Dockerfile.dev Gemfile Gemfile.lock
           git commit -m "chore: update Ruby to ${{ steps.ruby.outputs.latest }} and gem dependencies"
           git push --force origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
