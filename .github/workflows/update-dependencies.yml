@@ -190,9 +190,23 @@ jobs:
           echo "Staging failed to return 200 after 10 attempts"
           exit 1
 
+  deploy-production:
+    name: Deploy to Fly production
+    needs: [update, verify-staging]
+    runs-on: ubuntu-latest
+    concurrency: deploy-production
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update.outputs.branch }}
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config fly.toml
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
   merge:
     name: Merge to main
-    needs: [update, verify-staging]
+    needs: [update, verify-staging, deploy-production]
     runs-on: ubuntu-latest
     steps:
       - name: Merge pull request
@@ -211,6 +225,10 @@ jobs:
         with:
           ref: main
 
+      - name: Resolve deployed commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -219,7 +237,7 @@ jobs:
         run: |
           az acr build \
             --registry continuationacr \
-            --image continuation:${{ github.sha }} \
+            --image continuation:${{ steps.sha.outputs.sha }} \
             --image continuation:latest \
             .
 
@@ -228,7 +246,7 @@ jobs:
           az containerapp update \
             --name continuation \
             --resource-group continuation-rg \
-            --image continuationacr.azurecr.io/continuation:${{ github.sha }}
+            --image continuationacr.azurecr.io/continuation:${{ steps.sha.outputs.sha }}
 
       - name: Smoke test
         run: |
