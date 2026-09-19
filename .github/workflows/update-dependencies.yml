@@ -232,6 +232,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Flag PR for manual review
+        if: steps.diff.outputs.changed == 'true' && steps.majorcheck.outputs.major_bump == 'true'
+        continue-on-error: true
+        run: |
+          gh label create "needs-review" --color B60205 \
+            --description "Blocked on a major gem version bump — needs manual review and merge" \
+            --force
+          gh pr edit "${{ steps.pr.outputs.number }}" \
+            --add-label "needs-review" \
+            --add-assignee leclaist \
+            --add-reviewer leclaist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   ci:
     name: Run CI
     needs: update
