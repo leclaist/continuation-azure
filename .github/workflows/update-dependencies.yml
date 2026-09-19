@@ -17,6 +17,7 @@ jobs:
       branch: ${{ steps.commit.outputs.branch }}
       pr_number: ${{ steps.pr.outputs.number }}
       major_bump: ${{ steps.majorcheck.outputs.major_bump }}
+      remediated: ${{ steps.majorcheck.outputs.remediated }}
     steps:
       - uses: actions/checkout@v6
 
@@ -61,39 +62,92 @@ jobs:
         run: |
           bundle config set --local frozen false
           bundle update --all
-          bundle list | grep '* rails ' | awk '{print $3}' | tr -d '()' > /tmp/rails-version.txt
+
+      - name: Detect and remediate major version bumps
+        id: majorcheck
+        run: |
+          cat > /tmp/majorcheck.rb <<'RUBY'
+          require "fileutils"
+
+          def versions(path)
+            File.read(path).scan(/^ {4}(\S+) \(([\d]+(?:\.[\d]+)*)/).each_with_object({}) { |(n, v), h| h[n] = v }
+          end
+
+          def report(output, major_bump:, remediated: false, note: "")
+            File.write("/tmp/major-bumps.txt", note)
+            File.open(output, "a") do |f|
+              f.puts "major_bump=#{major_bump}"
+              f.puts "remediated=#{remediated}"
+            end
+          end
+
+          before_path = "/tmp/Gemfile.lock.before"
+          before = versions(before_path)
+          after  = versions("Gemfile.lock")
+          output = ENV.fetch("GITHUB_OUTPUT")
+
+          bumps = after.filter_map do |gem, new_v|
+            old_v = before[gem]
+            next unless old_v
+            next if old_v.split(".").first == new_v.split(".").first
+            [gem, old_v, new_v]
+          end
+
+          if bumps.empty?
+            puts "No major version bumps."
+            report(output, major_bump: false)
+            exit 0
+          end
+
+          puts "Major version bumps detected:"
+          bumps.each { |g, o, n| puts "  #{g}: #{o} -> #{n}" }
+
+          gemfile = File.read("Gemfile")
+          pinnable = bumps.reject { |g, _, _| gemfile =~ /^gem\s+["']#{Regexp.escape(g)}["']/ }
+
+          if pinnable.empty?
+            puts "Every bumped gem is already an explicit Gemfile dependency — skipping auto-remediation."
+            report(output, major_bump: true, note: bumps.map { |g, o, n| "#{g}: #{o} -> #{n}" }.join("\n"))
+            exit 0
+          end
+
+          puts "Attempting remediation by pinning: #{pinnable.map(&:first).join(', ')}"
+          FileUtils.cp(before_path, "Gemfile.lock")
+
+          File.open("Gemfile", "a") do |f|
+            f.puts
+            f.puts "# Auto-pinned by the weekly dependency update after bundle update tried to"
+            f.puts "# jump a major version. Review the new major and remove this pin when ready."
+            pinnable.each { |g, o, _| f.puts %(gem "#{g}", "< #{o.split(".").first.to_i + 1}") }
+          end
+
+          system("bundle update --all", exception: true)
+
+          after2 = versions("Gemfile.lock")
+          remaining = after2.filter_map do |gem, new_v|
+            old_v = before[gem]
+            next unless old_v
+            next if old_v.split(".").first == new_v.split(".").first
+            "#{gem}: #{old_v} -> #{new_v}"
+          end
+
+          if remaining.empty?
+            puts "Remediation succeeded."
+            note = pinnable.map { |g, o, _| "#{g}: held below #{o.split(".").first.to_i + 1} (bundle update wanted to jump past it)" }.join("\n")
+            report(output, major_bump: false, remediated: true, note: note)
+          else
+            puts "Remediation did not fully resolve — still has major bumps:"
+            remaining.each { |b| puts "  #{b}" }
+            report(output, major_bump: true, note: bumps.map { |g, o, n| "#{g}: #{o} -> #{n}" }.join("\n"))
+          end
+          RUBY
+          ruby /tmp/majorcheck.rb
+
+      - name: Record Rails version
+        run: bundle list | grep '* rails ' | awk '{print $3}' | tr -d '()' > /tmp/rails-version.txt
 
       - name: Audit updated dependencies
         run: bin/bundler-audit 2>&1 | tee /tmp/post-audit.txt
-
-      - name: Detect major version bumps
-        id: majorcheck
-        run: |
-          ruby -e '
-            def versions(path)
-              File.read(path).scan(/^ {4}(\S+) \(([\d]+(?:\.[\d]+)*)/).each_with_object({}) { |(n, v), h| h[n] = v }
-            end
-
-            before = versions("/tmp/Gemfile.lock.before")
-            after  = versions("Gemfile.lock")
-
-            bumps = after.filter_map do |gem, new_v|
-              old_v = before[gem]
-              next unless old_v
-              next if old_v.split(".").first == new_v.split(".").first
-              "#{gem}: #{old_v} -> #{new_v}"
-            end
-
-            File.write("/tmp/major-bumps.txt", bumps.join("\n"))
-            File.open(ENV["GITHUB_OUTPUT"], "a") { |f| f.puts "major_bump=#{bumps.any?}" }
-
-            if bumps.any?
-              puts "Major version bumps detected:"
-              bumps.each { |b| puts "  #{b}" }
-            else
-              puts "No major version bumps."
-            end
-          '
 
       - name: Check for changes
         id: diff
@@ -109,7 +163,7 @@ jobs:
 
           branch="automated/dependencies-$(date +%Y-%m-%d)"
           git checkout -b "$branch"
-          git add .ruby-version Gemfile.lock
+          git add .ruby-version Gemfile Gemfile.lock
           git commit -m "chore: update Ruby to ${{ steps.ruby.outputs.latest }} and gem dependencies"
           git push --force origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
@@ -132,6 +186,17 @@ jobs:
               echo '```'
               cat /tmp/major-bumps.txt
               echo '```'
+              echo
+            elif [ "${{ steps.majorcheck.outputs.remediated }}" = "true" ]; then
+              echo "## 🔧 Major version bump auto-remediated"
+              echo
+              echo "\`bundle update\` tried to jump at least one gem across a major version boundary. It's been pinned below that in the Gemfile and everything else updated normally, so this PR proceeds through auto-merge as usual."
+              echo
+              echo '```'
+              cat /tmp/major-bumps.txt
+              echo '```'
+              echo
+              echo "Remove the pin once the new major version has been reviewed for compatibility."
               echo
             fi
 
