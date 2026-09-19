@@ -60,7 +60,11 @@ If a previous `bg-<year>.*` file exists with a different extension, delete it:
 git rm app/assets/images/bg-<year>.<old-ext>
 ```
 
-### 5. Commit and push
+### 5. Verify
+
+Run `docker compose exec web bin/rails test` (`docker compose run --rm web bin/rails test` if the app isn't already up). This step edits `application.html.erb`, which renders on every page — a broken edit here isn't cosmetic, it takes the whole site down (see CLAUDE.md's CI / automation section for what a broken layout edit did once). If anything fails, fix it before continuing — do not commit or push with a failing suite.
+
+### 6. Commit and push
 
 ```bash
 git add app/assets/images/bg-<year>.<ext> app/assets/stylesheets/application.css app/views/layouts/application.html.erb
