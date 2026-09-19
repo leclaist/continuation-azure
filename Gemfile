@@ -1,6 +1,13 @@
 source "https://rubygems.org"
 
 gem "rails", "~> 8.1.3"
+
+# json 3.x changed JSON.parse to accept only keyword options, but
+# ActiveSupport::JSON.decode (used to decrypt session cookies) still calls it
+# with a positional hash — breaking every request that carries an existing
+# session cookie. Pin below 3 until Rails ships a compatible ActiveSupport.
+gem "json", "< 3"
+
 gem "propshaft"
 gem "sqlite3", ">= 2.1"
 gem "puma", ">= 5.0"

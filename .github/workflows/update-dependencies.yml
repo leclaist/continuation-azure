@@ -178,17 +178,30 @@ jobs:
       - name: Smoke test
         run: |
           echo "Waiting for staging to wake up..."
+          cookies=$(mktemp)
+          status=000
           for i in $(seq 1 10); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://continuation-staging.fly.dev || echo "000")
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -c "$cookies" -b "$cookies" https://continuation-staging.fly.dev || echo "000")
             echo "Attempt $i: HTTP $status"
-            if [ "$status" = "200" ]; then
-              echo "Staging is healthy"
-              exit 0
-            fi
+            [ "$status" = "200" ] && break
             sleep 10
           done
-          echo "Staging failed to return 200 after 10 attempts"
-          exit 1
+          if [ "$status" != "200" ]; then
+            echo "Staging failed to return 200 after 10 attempts"
+            exit 1
+          fi
+          echo "Staging is healthy"
+
+          # Reuse the session cookie from above so this exercises the
+          # code path that reads back an existing session, not just a
+          # fresh one — that's what caught the json 3.x incompatibility.
+          echo "Checking /2008 (earliest year)..."
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -c "$cookies" -b "$cookies" https://continuation-staging.fly.dev/2008)
+          echo "GET /2008: HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "Staging /2008 failed"
+            exit 1
+          fi
 
   deploy-production:
     name: Deploy to Fly production
@@ -251,14 +264,27 @@ jobs:
       - name: Smoke test
         run: |
           echo "Waiting for Azure to become healthy..."
+          cookies=$(mktemp)
+          status=000
           for i in $(seq 1 10); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://christineclaymoreau.lol || echo "000")
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 -c "$cookies" -b "$cookies" https://christineclaymoreau.lol || echo "000")
             echo "Attempt $i: HTTP $status"
-            if [ "$status" = "200" ]; then
-              echo "Azure deployment is healthy"
-              exit 0
-            fi
+            [ "$status" = "200" ] && break
             sleep 15
           done
-          echo "Azure failed to return 200 after 10 attempts"
-          exit 1
+          if [ "$status" != "200" ]; then
+            echo "Azure failed to return 200 after 10 attempts"
+            exit 1
+          fi
+          echo "Azure deployment is healthy"
+
+          # Reuse the session cookie from above so this exercises the
+          # code path that reads back an existing session, not just a
+          # fresh one — that's what caught the json 3.x incompatibility.
+          echo "Checking /2008 (earliest year)..."
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 -c "$cookies" -b "$cookies" https://christineclaymoreau.lol/2008)
+          echo "GET /2008: HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "Azure /2008 failed"
+            exit 1
+          fi
