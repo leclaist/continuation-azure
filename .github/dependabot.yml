@@ -5,6 +5,15 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+  # Dependabot PRs auto-merge on CI passing alone (dependabot-auto-merge.yml)
+  # with no major-version-bump check — unlike the weekly Update Ruby and
+  # dependencies workflow, which detects and either auto-remediates or
+  # flags major bumps for manual review. A json 2.x -> 3.0 bump once broke
+  # every request carrying a session cookie; keep major bumps out of the
+  # auto-merge path entirely and let them come through that workflow instead.
+  ignore:
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
 - package-ecosystem: github-actions
   directory: "/"
   schedule:

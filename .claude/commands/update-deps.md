@@ -44,7 +44,7 @@ Run `docker compose exec web bin/rails test` (`docker compose run --rm web bin/r
 
 ## 7. Report and commit
 - Run `git diff --stat` to show what changed
-- Commit with: `git add .ruby-version Dockerfile Gemfile Gemfile.lock && git commit -m "chore: update Ruby and gem dependencies"`
+- Commit with: `git add .ruby-version Dockerfile Dockerfile.dev Gemfile Gemfile.lock && git commit -m "chore: update Ruby and gem dependencies"`
 - Push with: `git push`
 
 Keep the summary short: Ruby old → new, Rails version after update, number of gems changed, and any major version bump encountered and how it was handled.
