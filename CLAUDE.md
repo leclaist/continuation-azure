@@ -7,7 +7,7 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 - **Content source**: Google Drive folder (read-only, service account). Files are named by date. No content in the database.
 - **Database**: SQLite — stores only visitor counter, cached AI-generated comments, and the recurring commenter roster (identity + memory).
 - **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
-- **Ruby**: `.ruby-version` is `4.0.5` (production). Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
+- **Ruby**: kept current automatically by the weekly dependency update (see CI / automation below) — check `.ruby-version` for the exact value rather than trusting a number in this doc. Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
 - **Rails cache persists across deploys**: `Rails.cache` (`drive/*` keys, 1hr TTL) is backed by a SQLite db (`storage/production_cache.sqlite3`) on the persistent Fly volume — deploying a fix to cache-*populating* logic does not invalidate what's already cached. Clear manually if needed: `fly ssh console --command "/rails/bin/rails runner 'Rails.cache.delete(\"drive/files_by_year\")'"` (swap the key, or add `--app continuation-staging` for staging).
 
 ## Commands
@@ -85,7 +85,13 @@ fly logs
   - **Fly.io**: staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
   - **Azure**: build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
 - **Dependabot PRs** auto-merge when CI passes
-- **Weekly Monday 9am UTC**: `Update Ruby and dependencies` workflow updates Ruby + gems, opens and merges a PR automatically
+- **Weekly Monday 9am UTC**: `Update Ruby and dependencies` workflow updates Ruby + gems, then decides whether it's safe to ship automatically:
+  - It diffs `Gemfile.lock` before/after `bundle update --all` to catch any gem crossing a major version boundary (a minor/patch-only update is always considered safe).
+  - **No major bump** → normal path: CI → deploy staging → smoke test (`/` then `/2008`, reusing the same session cookie — see the `json` incident below for why) → deploy production → merge to `main` → deploy Azure.
+  - **Major bump, and that gem isn't already an explicit `Gemfile` dependency** → auto-remediates: resets the lockfile, adds a `gem "<name>", "< <next major>"` pin, reruns `bundle update --all`. If that now resolves clean, it proceeds through the normal path above with a note in the PR about what got pinned and why.
+  - **Major bump on a gem that's already explicit in the `Gemfile`, or remediation still doesn't resolve** → skips auto-merge and the production/Azure deploys (staging still deploys, for visibility), labels the PR `needs-review`, and assigns + requests review from the repo owner — that's the alert; it rides GitHub's own notifications rather than a separate channel.
+  - Source: `.github/workflows/update-dependencies.yml`, jobs `update` (detection/remediation), `verify-staging`, `deploy-production`, `merge`, `deploy-azure`.
+- **Incident (2026-09)**: an automated `bundle update --all` bumped `json` 2.x → 3.0, which made `JSON.parse` keyword-only. `ActiveSupport::JSON.decode` (used to decrypt an *existing* session cookie) still calls it positionally, so every request carrying a session cookie 500'd — a fresh, cookie-less request always worked, which is why it looked intermittent rather than broken. Fixed by pinning `gem "json", "< 3"`. This is the reason the smoke tests above reuse a cookie and `test/integration/session_persistence_test.rb` exists, and the reason the major-bump detection/remediation above was added.
 
 ### GitHub Actions secrets
 
@@ -109,6 +115,7 @@ fly logs
 - Models: plain `ActiveSupport::TestCase` — transactional fixtures handle teardown automatically.
 - Helpers: include the module directly in an `ActiveSupport::TestCase` subclass.
 - `with_env` in `EntriesControllerTest` is the pattern for temporarily setting ENV vars in a test.
+- Session/cookie round-trips: `test/integration/session_persistence_test.rb` makes two requests reusing the same session cookie, with forgery protection forced on via `setup`/`teardown` (`test.rb` disables it by default, which would otherwise skip the real encrypted-cookie decrypt path entirely). Use this pattern for anything touching session or cookie serialization.
 
 **After writing or editing any code or tests, always run:**
 ```bash
