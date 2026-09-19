@@ -16,8 +16,12 @@ jobs:
       changed: ${{ steps.diff.outputs.changed }}
       branch: ${{ steps.commit.outputs.branch }}
       pr_number: ${{ steps.pr.outputs.number }}
+      major_bump: ${{ steps.majorcheck.outputs.major_bump }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Snapshot current lockfile
+        run: cp Gemfile.lock /tmp/Gemfile.lock.before
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -62,6 +66,35 @@ jobs:
       - name: Audit updated dependencies
         run: bin/bundler-audit 2>&1 | tee /tmp/post-audit.txt
 
+      - name: Detect major version bumps
+        id: majorcheck
+        run: |
+          ruby -e '
+            def versions(path)
+              File.read(path).scan(/^ {4}(\S+) \(([\d]+(?:\.[\d]+)*)/).each_with_object({}) { |(n, v), h| h[n] = v }
+            end
+
+            before = versions("/tmp/Gemfile.lock.before")
+            after  = versions("Gemfile.lock")
+
+            bumps = after.filter_map do |gem, new_v|
+              old_v = before[gem]
+              next unless old_v
+              next if old_v.split(".").first == new_v.split(".").first
+              "#{gem}: #{old_v} -> #{new_v}"
+            end
+
+            File.write("/tmp/major-bumps.txt", bumps.join("\n"))
+            File.open(ENV["GITHUB_OUTPUT"], "a") { |f| f.puts "major_bump=#{bumps.any?}" }
+
+            if bumps.any?
+              puts "Major version bumps detected:"
+              bumps.each { |b| puts "  #{b}" }
+            else
+              puts "No major version bumps."
+            end
+          '
+
       - name: Check for changes
         id: diff
         run: |
@@ -88,32 +121,45 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: |
           rails_version=$(cat /tmp/rails-version.txt)
-          pre_audit=$(cat /tmp/pre-audit.txt)
-          post_audit=$(cat /tmp/post-audit.txt)
           branch="${{ steps.commit.outputs.branch }}"
+
+          {
+            if [ "${{ steps.majorcheck.outputs.major_bump }}" = "true" ]; then
+              echo "## ⚠️ Major version bump — needs manual review"
+              echo
+              echo "At least one gem crossed a major version boundary. Auto-merge and the production/Azure deploys are skipped until this is reviewed and merged by hand."
+              echo
+              echo '```'
+              cat /tmp/major-bumps.txt
+              echo '```'
+              echo
+            fi
+
+            echo "## Automated dependency update"
+            echo
+            echo "| | Version |"
+            echo "|---|---|"
+            echo "| Ruby | ${{ steps.ruby.outputs.current }} → ${{ steps.ruby.outputs.latest }} |"
+            echo "| Rails | ${rails_version} |"
+            echo
+            echo "### Pre-update vulnerability audit"
+            echo '```'
+            cat /tmp/pre-audit.txt
+            echo '```'
+            echo
+            echo "### Post-update vulnerability audit"
+            echo '```'
+            cat /tmp/post-audit.txt
+            echo '```'
+            echo
+            echo "> Gems updated with \`bundle update\` within existing Gemfile constraints."
+          } > /tmp/pr-body.md
 
           existing=$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')
           if [ -z "$existing" ]; then
             gh pr create \
               --title "chore: update Ruby ${{ steps.ruby.outputs.current }} → ${{ steps.ruby.outputs.latest }} and gems" \
-              --body "## Automated dependency update
-
-          | | Version |
-          |---|---|
-          | Ruby | ${{ steps.ruby.outputs.current }} → ${{ steps.ruby.outputs.latest }} |
-          | Rails | ${rails_version} |
-
-          ### Pre-update vulnerability audit
-          \`\`\`
-          ${pre_audit}
-          \`\`\`
-
-          ### Post-update vulnerability audit
-          \`\`\`
-          ${post_audit}
-          \`\`\`
-
-          > Gems updated with \`bundle update\` within existing Gemfile constraints."
+              --body-file /tmp/pr-body.md
           fi
 
           pr_number=$(gh pr list --head "$branch" --json number --jq '.[0].number')
@@ -206,6 +252,7 @@ jobs:
   deploy-production:
     name: Deploy to Fly production
     needs: [update, verify-staging]
+    if: needs.update.outputs.major_bump != 'true'
     runs-on: ubuntu-latest
     concurrency: deploy-production
     steps:
