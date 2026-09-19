@@ -7,7 +7,7 @@ Run `bin/bundler-audit` and capture the output. If vulnerabilities are found, sh
 - Read `.ruby-version` for the current version
 - Run: `curl -fsSL "https://endoflife.date/api/ruby.json" | jq -r --arg today "$(date +%Y-%m-%d)" '[.[] | select(.eol == false or .eol > $today)] | sort_by(.latest | split(".") | map(tonumber)) | last | .latest'`
 - If the latest differs from current, update `.ruby-version` with the new version
-- Also update the `ARG RUBY_VERSION=` line in `Dockerfile` to match — the Docker image must run the same Ruby as the app
+- Also update the `ARG RUBY_VERSION=` line in `Dockerfile` **and** `Dockerfile.dev` to match — both images must run the same Ruby as the app (mismatched gem native-extension ABIs won't necessarily error, they'll just silently run on a stale interpreter)
 
 ## 3. Update gems
 - Snapshot the current lockfile first: `cp Gemfile.lock /tmp/Gemfile.lock.before`
