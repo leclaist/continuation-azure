@@ -106,7 +106,7 @@ Two environments, both deploying automatically on push to `main`:
 | Staging | `https://continuation-staging.fly.dev` | 512MB, suspends when idle |
 | Production | `https://continuation.fly.dev` | 1GB, stops when idle |
 
-**Deploy pipeline** — staging deploys first, then a smoke test polls the staging URL until it returns HTTP 200. If it passes, production deploys. If it fails, production is not touched.
+**Deploy pipeline** — staging deploys first, then a smoke test polls the staging URL until it returns HTTP 200, then checks `/2008` (the earliest year) reusing that same session cookie. A fresh, cookie-less request alone isn't enough — a past incident (see below) only broke requests carrying an *existing* session cookie, so the smoke test deliberately exercises that path. If it passes, production deploys. If it fails, production is not touched.
 
 ```bash
 # Staging
@@ -185,6 +185,11 @@ After changing secrets via Terraform, restart the revision to pick them up (Azur
 
 **Dependabot** opens weekly PRs for gem and GitHub Actions updates. These are automatically approved and squash-merged once CI passes.
 
-**Weekly dependency update** (`Update Ruby and dependencies` workflow, Mondays 9am UTC) — checks for CVEs in current gems, updates `.ruby-version` to the latest stable Ruby, runs `bundle update --all`, re-checks for CVEs, then opens a PR if anything changed. The PR is gated: CI (Brakeman, bundler-audit, importmap audit, RuboCop, tests) must pass, then the updated code is deployed to Fly staging and smoke tested. Only after staging is healthy does the PR auto-merge to `main`, which triggers the normal production deploy pipelines.
+**Weekly dependency update** (`Update Ruby and dependencies` workflow, Mondays 9am UTC) — checks for CVEs in current gems, updates `.ruby-version` to the latest stable Ruby, runs `bundle update --all`, re-checks for CVEs, then decides whether it's safe to ship automatically:
+
+- It diffs `Gemfile.lock` before/after the update to catch any gem crossing a major version boundary. This isn't theoretical: an update once bumped `json` 2.x → 3.0, which changed `JSON.parse`'s signature and broke decrypting an *existing* session cookie — every repeat visit 500'd while a fresh visit looked fine, until it was pinned back with `gem "json", "< 3"`.
+- **No major bump** → normal path: CI (Brakeman, bundler-audit, importmap audit, RuboCop, tests) → deploy to Fly staging → smoke test (`/` then `/2008`, reusing the session cookie — exactly what would have caught the `json` incident) → auto-merge to `main` → the normal production deploy pipelines above.
+- **Major bump on a gem that isn't already an explicit `Gemfile` dependency** → auto-remediates: pins that gem below the new major version and reruns the update. If it now resolves cleanly, proceeds through the normal path above with a note in the PR about what got pinned and why.
+- **Major bump on an already-explicit dependency, or remediation doesn't resolve** → skips auto-merge and the production deploy (staging still deploys, for visibility). The PR is labeled `needs-review` and assigned with a review request — no separate alerting service, just GitHub's own notifications.
 
 The `/update-deps` Claude Code skill runs the same update process locally.
