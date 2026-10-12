@@ -81,11 +81,15 @@ class AudioPlayerTest < ApplicationSystemTestCase
     assert result["ok"], "audio did not reach playing=#{playing} within #{timeout}s: #{result.inspect}"
   end
 
-  # A minimal, genuinely decodable WAV file (silence) — the controller builds
-  # a real <audio> element around the streamed bytes, so playback only
-  # actually starts (firing the "play" event the controller listens for) if
-  # the bytes are valid audio, not just an arbitrary string.
-  def silent_wav_bytes(duration_seconds: 0.2, sample_rate: 8000)
+  # A genuinely decodable WAV file (silence) — the controller builds a real
+  # <audio> element around the streamed bytes, so playback only actually
+  # starts (firing the "play" event the controller listens for) if the bytes
+  # are valid audio, not just an arbitrary string. Needs to be long enough to
+  # outlast the round trip to actually observe: an earlier 0.2s clip let
+  # playback finish — and the controller's own "ended" handler reset the icon
+  # back to ▶ — before any poll ever caught it mid-play, which looked exactly
+  # like a slow/flaky CI runner but wasn't (see git history on this file).
+  def silent_wav_bytes(duration_seconds: 3.0, sample_rate: 8000)
     sample_count = (duration_seconds * sample_rate).to_i
     data = ("\x00\x00" * sample_count).b
     byte_rate = sample_rate * 2
