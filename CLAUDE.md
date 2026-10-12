@@ -68,7 +68,7 @@ fly logs
 
 **Banner ads**: configured per-year in `config/banner_ads.yml`, rendered via `app/views/shared/_banner_ad.html.erb`.
 
-**Voice recordings**: optional per-entry audio, looked up via `GoogleDriveService#audio_for(slug)` (cache key `drive/audio_by_slug`) and streamed through `GET /:year/:slug/audio` (`entries#audio`, `ActionController::Live` — never buffers the whole file in memory). Rendered via `app/views/shared/_audio_player.html.erb` + `audio_player_controller.js` (Stimulus; `disconnect()` pauses playback on Turbo navigation away from the entry). `list_files` filters to `mimeType = 'application/vnd.google-apps.document'` specifically so audio files sharing the same Drive folder aren't mistaken for journal entries — don't drop that filter. `scripts/voice-memo-sync/` (see README) automates getting recordings from macOS Voice Memos into the Drive folder.
+**Voice recordings**: optional per-entry audio, looked up via `GoogleDriveService#audio_for(slug)` (cache key `drive/audio_by_slug/v2` — bump the version if `AudioFile`'s members change, since a cached struct with old members can't be loaded) and streamed through `GET /:year/:slug/audio` (`entries#audio`, `ActionController::Live` — never buffers the whole file in memory). Honors single `Range: bytes=` requests with a 206 (proxied to Drive as a ranged download) — Safari won't play or seek `<audio>` without that. Rendered via `app/views/shared/_audio_player.html.erb` + `audio_player_controller.js` (Stimulus; `disconnect()` pauses playback on Turbo navigation away from the entry). `list_files` filters to `mimeType = 'application/vnd.google-apps.document'` specifically so audio files sharing the same Drive folder aren't mistaken for journal entries — don't drop that filter. `scripts/voice-memo-sync/` (see README) automates getting recordings from macOS Voice Memos into the Drive folder.
 
 ## Environment variables
 
@@ -85,10 +85,12 @@ fly logs
 - **Push/merge to `main`** triggers two independent deploy pipelines in parallel:
   - **Fly.io**: staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
   - **Azure**: build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
+- **Smoke tests** are all `bin/smoke <base-url> [attempts] [sleep]` (also runnable locally, e.g. `bin/smoke http://localhost:3000`): waits for `/`, then follows real links home → earliest year → its first entry with one cookie jar, checking actual content (year list, `data-year` theme, non-empty entry), and a `Range` request for the entry's recording if it has one. Change smoke behavior there, not in the workflows.
+- **Nightly 08:00 UTC** (`.github/workflows/nightly-live-check.yml`, also `workflow_dispatch`): runs `bin/smoke` against all three sites, then `bin/rails live:check` (`lib/tasks/live.rake`) inside Fly production via `fly ssh console`, using production's own credentials and bypassing `Rails.cache`. It fails on: Drive auth/listing failure, an empty folder, a doc dated without a year (Date.parse would file it under the *current* year), two docs with the same date (second is unreachable), an empty export of the newest entry, a recording with no matching entry, a failed ranged fetch, or an invalid Anthropic key / retired `CommentGeneratorService::MODEL`. Undated docs (e.g. working notes) are only printed as a warning. Failure alerts via GitHub's failed-workflow notification.
 - **Dependabot PRs** auto-merge when CI passes
 - **Weekly Monday 9am UTC**: `Update Ruby and dependencies` workflow updates Ruby + gems, then decides whether it's safe to ship automatically:
   - It diffs `Gemfile.lock` before/after `bundle update --all` to catch any gem crossing a major version boundary (a minor/patch-only update is always considered safe).
-  - **No major bump** → normal path: CI → deploy staging → smoke test (`/` then `/2008`, reusing the same session cookie — see the `json` incident below for why) → deploy production → merge to `main` → deploy Azure.
+  - **No major bump** → normal path: CI → deploy staging → smoke test (`bin/smoke`, which reuses one session cookie across requests — see the `json` incident below for why) → deploy production → merge to `main` → deploy Azure.
   - **Major bump, and that gem isn't already an explicit `Gemfile` dependency** → auto-remediates: resets the lockfile, adds a `gem "<name>", "< <next major>"` pin, reruns `bundle update --all`. If that now resolves clean, it proceeds through the normal path above with a note in the PR about what got pinned and why.
   - **Major bump on a gem that's already explicit in the `Gemfile`, or remediation still doesn't resolve** → skips auto-merge and the production/Azure deploys (staging still deploys, for visibility), labels the PR `needs-review`, and assigns + requests review from the repo owner — that's the alert; it rides GitHub's own notifications rather than a separate channel.
   - Source: `.github/workflows/update-dependencies.yml`, jobs `update` (detection/remediation), `verify-staging`, `deploy-production`, `merge`, `deploy-azure`.
@@ -114,6 +116,8 @@ fly logs
 
 **Patterns in use:**
 - Controllers: stub `GoogleDriveService.new` (and `CommentGeneratorService.new` for entries) using the `stub` helper in `test_helper.rb`. Use `fake_entry` and `fake_drive_service` to build doubles.
+- Visitor flows (`test/integration/visitor_flow_test.rb`): use `drive_service_with(entries)` + `drive_entry("2008-11-14")` instead — a real `GoogleDriveService` (via `allocate`, so no auth) with only the Drive API calls faked, so its real year grouping/sorting/slug lookup runs. `fake_drive_service#file_by_slug` returns its canned entry for *any* slug, so it can't catch a link/slug mismatch. The same file renders every year configured in `YearThemeHelper::THEMES`, `banner_ads.yml` and `music_playlists.yml` — adding a year there gets tested automatically.
+- `CommentGeneratorService` caching/continuity: `run_comments_for` in its test stubs `Anthropic::Client.new` with a canned reply and returns `[comments, api_calls]`, so cache hits can assert zero API calls.
 - Models: plain `ActiveSupport::TestCase` — transactional fixtures handle teardown automatically.
 - Helpers: include the module directly in an `ActiveSupport::TestCase` subclass.
 - `with_env` in `EntriesControllerTest` is the pattern for temporarily setting ENV vars in a test.
@@ -128,7 +132,7 @@ docker compose exec web bin/rails test:system # if you touched test/system or JS
 ```
 
 **What's intentionally not tested:**
-- `GoogleDriveService` (pure API adapter)
+- `GoogleDriveService`'s Drive API calls (its pure name → date/slug logic *is* tested in `test/services/google_drive_service_test.rb`; the live API is covered by the nightly `live:check` instead)
 - The actual LLM output of `CommentGeneratorService#generate` / `CommentsRefreshService#call` — real Anthropic API calls are expensive, non-deterministic, and slow, so none of these tests call it. `test/services/comment_generator_service_test.rb` instead stubs `Anthropic::Client.new` (same pattern as `GoogleDriveService.stub`) and asserts on the *prompt* the service builds — that it includes the entry's own content, the right year-specific voice, and the existing commenter roster. That proves the model is given the right thing to be relevant about; it can't prove the model's reply actually is relevant. Caching/staleness behavior (`stale?` hash comparison) is covered separately in `test/models/generated_comment_test.rb`.
 
 ## Skills

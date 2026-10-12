@@ -47,6 +47,24 @@ def fake_drive_service(by_year: {}, word_count: 0, for_year: [], by_slug: nil, h
   svc.define_singleton_method(:file_by_slug)   { |_, _| by_slug }
   svc.define_singleton_method(:content_html)   { |_| html }
   svc.define_singleton_method(:audio_for)      { |_| audio }
-  svc.define_singleton_method(:stream_audio)   { |_, &block| block.call(audio_bytes) }
+  svc.define_singleton_method(:stream_audio)   { |_, range: nil, &block| block.call(range ? audio_bytes.byteslice(range) : audio_bytes) }
   svc
+end
+
+# A real GoogleDriveService with only the Drive API calls faked, so its own
+# grouping/sorting/slug lookup logic runs — unlike fake_drive_service, where
+# file_by_slug returns a canned entry regardless of the slug requested.
+def drive_service_with(entries, html: "<p>test</p>", audio_by_slug: {})
+  svc = GoogleDriveService.allocate # skip initialize: no service-account auth
+  svc.define_singleton_method(:files_by_year) { entries.group_by(&:year) }
+  svc.define_singleton_method(:content_html) { |_| html }
+  svc.define_singleton_method(:total_word_count) { 0 }
+  svc.define_singleton_method(:audio_by_slug) { audio_by_slug }
+  svc
+end
+
+# Builds a real GoogleDriveService::Entry from a Drive file name, the same way
+# the service does when listing the folder.
+def drive_entry(name, id: "file-#{name.parameterize}")
+  GoogleDriveService.allocate.send(:build_entry, OpenStruct.new(id: id, name: name))
 end
