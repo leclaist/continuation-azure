@@ -129,7 +129,7 @@ docker compose exec web bin/rails test:system # if you touched test/system or JS
 
 **What's intentionally not tested:**
 - `GoogleDriveService` (pure API adapter)
-- `CommentGeneratorService#generate` and `CommentsRefreshService#call` (call the Anthropic API — use caching layer / controller stub tests instead)
+- The actual LLM output of `CommentGeneratorService#generate` / `CommentsRefreshService#call` — real Anthropic API calls are expensive, non-deterministic, and slow, so none of these tests call it. `test/services/comment_generator_service_test.rb` instead stubs `Anthropic::Client.new` (same pattern as `GoogleDriveService.stub`) and asserts on the *prompt* the service builds — that it includes the entry's own content, the right year-specific voice, and the existing commenter roster. That proves the model is given the right thing to be relevant about; it can't prove the model's reply actually is relevant. Caching/staleness behavior (`stale?` hash comparison) is covered separately in `test/models/generated_comment_test.rb`.
 
 ## Skills
 
