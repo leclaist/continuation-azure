@@ -1,28 +1,45 @@
 name: Deploy
 
+# Runs only after CI passes on a push to main — never in parallel with it, so a
+# commit with failing tests can't reach staging or production.
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 jobs:
   deploy-staging:
     name: Deploy to staging
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     concurrency: deploy-staging
     steps:
+      # Deploy the exact commit CI tested, not whatever main points at now.
       - uses: actions/checkout@v6
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --config fly.staging.toml
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Skip if main has moved on
+        id: latest
+        run: bin/ci-is-latest-main "${{ github.event.workflow_run.head_sha }}"
+      - if: steps.latest.outputs.latest == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      - if: steps.latest.outputs.latest == 'true'
+        run: flyctl deploy --remote-only --config fly.staging.toml
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_STAGING_API_TOKEN }}
+    outputs:
+      latest: ${{ steps.latest.outputs.latest }}
 
   verify-staging:
     name: Verify staging
     needs: deploy-staging
+    if: needs.deploy-staging.outputs.latest == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Smoke test
         run: bin/smoke https://continuation-staging.fly.dev 10 10
 
@@ -33,6 +50,8 @@ jobs:
     concurrency: deploy-production
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only --config fly.toml
         env:

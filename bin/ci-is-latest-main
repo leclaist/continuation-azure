@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Usage (in a deploy workflow): bin/ci-is-latest-main <tested-sha>
+#
+# Deploys trigger when CI finishes, and CI runs can finish out of order: if
+# two commits land close together, the older one's CI may complete second.
+# Deploying it then would roll production back. So only deploy when the
+# tested commit is still the tip of main — if main has moved on, that newer
+# commit's own CI run will deploy it. Writes latest=true|false to
+# $GITHUB_OUTPUT.
+set -euo pipefail
+
+tested="${1:?usage: bin/ci-is-latest-main <sha>}"
+tip=$(git ls-remote origin refs/heads/main | cut -f1)
+
+if [ "$tested" = "$tip" ]; then
+  echo "latest=true" >> "$GITHUB_OUTPUT"
+else
+  echo "main is now at $tip; skipping deploy of $tested (the newer commit's CI run will deploy)."
+  echo "latest=false" >> "$GITHUB_OUTPUT"
+fi

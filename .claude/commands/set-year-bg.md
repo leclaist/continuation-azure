@@ -64,10 +64,16 @@ git rm app/assets/images/bg-<year>.<old-ext>
 
 Run `docker compose exec web bin/rails test` (`docker compose run --rm web bin/rails test` if the app isn't already up). This step edits `application.html.erb`, which renders on every page — a broken edit here isn't cosmetic, it takes the whole site down (see CLAUDE.md's CI / automation section for what a broken layout edit did once). If anything fails, fix it before continuing — do not commit or push with a failing suite.
 
-### 6. Commit and push
+### 6. Commit and open a PR
+
+`main` is protected (see CLAUDE.md's "Branch protection" section): changes land through a pull request, and CI must pass before it can merge. Production deploys automatically once CI passes on `main`.
 
 ```bash
+git checkout -b update-<year>-background
 git add app/assets/images/bg-<year>.<ext> app/assets/stylesheets/application.css app/views/layouts/application.html.erb
 git commit -m "Update <year> background image"
-git push
+git push -u origin update-<year>-background
+gh pr create --fill
+gh pr checks --watch                     # wait for CI
+gh pr merge --squash --delete-branch     # only once every check passes
 ```

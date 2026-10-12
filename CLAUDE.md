@@ -6,7 +6,7 @@ Personal journal reader for Christine Clay Moreau. Content lives in Google Drive
 
 - **Content source**: Google Drive folder (read-only, service account). Files are named by date. No content in the database.
 - **Database**: SQLite — stores only visitor counter, cached AI-generated comments, and the recurring commenter roster (identity + memory).
-- **Deployment**: Fly.io (`ord` region). Two environments — staging and production. Pushes to `main` deploy staging first, smoke test it, then deploy production.
+- **Deployment**: Fly.io (`ord` region) staging + production, and Azure Container Apps production. `main` is protected — changes land via PR — and deploys start only after CI passes on `main` (see CI / automation).
 - **Ruby**: kept current automatically by the weekly dependency update (see CI / automation below) — check `.ruby-version` for the exact value rather than trusting a number in this doc. Local dev runs in Docker (`docker compose up`), so no local Ruby/rbenv install is required.
 - **Rails cache persists across deploys**: `Rails.cache` (`drive/*` keys, 1hr TTL) is backed by a SQLite db (`storage/production_cache.sqlite3`) on the persistent Fly volume — deploying a fix to cache-*populating* logic does not invalidate what's already cached. Clear manually if needed: `fly ssh console --command "/rails/bin/rails runner 'Rails.cache.delete(\"drive/files_by_year\")'"` (swap the key, or add `--app continuation-staging` for staging).
 
@@ -20,7 +20,7 @@ docker compose exec web bin/rails test           # test suite (excludes system t
 docker compose exec web bin/rails test:system    # browser tests (Capybara + Cuprite/headless Chrome)
 docker compose exec web bin/brakeman --no-pager  # static security analysis
 docker compose exec web bin/bundler-audit        # CVE check
-git push                                         # triggers CI + auto-deploy to Fly
+gh pr create --fill                              # main is protected: changes land via PR; merging deploys once CI passes
 ```
 
 (`web` is a one-off container — if `docker compose up` isn't already running, use `docker compose run --rm web <cmd>` instead of `exec`.)
@@ -82,9 +82,14 @@ fly logs
 ## CI / automation
 
 - **CI** runs on every PR and push: Brakeman, bundler-audit, importmap audit, RuboCop, tests, system tests (headless Chrome, preinstalled on the `ubuntu-latest` runner — see `.github/workflows/ci.yml`'s `system_test` job)
-- **Push/merge to `main`** triggers two independent deploy pipelines in parallel:
-  - **Fly.io**: staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
-  - **Azure**: build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
+- **Merge to `main`** → CI runs on `main` → **only if it passes**, two independent deploy pipelines start in parallel:
+  - **Fly.io** (`fly-deploy.yml`): staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
+  - **Azure** (`azure-deploy.yml`): build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
+- **Deploys are gated on CI**: both deploy workflows trigger on `workflow_run` (CI completed), not `push`, and run only when `conclusion == 'success'` and the CI run was for a push. They check out and deploy `workflow_run.head_sha` — the exact commit CI tested — not whatever `main` points at by then. CI runs can finish out of order when commits land close together, so `bin/ci-is-latest-main` skips the deploy if `main` has already moved past the tested commit (the newer commit's own CI run deploys instead) — otherwise an older commit could deploy last and roll production back. Note `workflow_run` workflows always run from the copy on the default branch, so edits to them only take effect once merged.
+- **Branch protection** (repository ruleset "Protect main", defined in `.github/rulesets/protect-main.json`): `main` can't be pushed to directly, force-pushed, or deleted; changes need a PR (no approval required — this is a solo repo), and the PR can't merge until CI's `scan_ruby`, `scan_js`, `lint`, `test`, and `system_test` checks pass. Two bypasses, both PR-merge-only (neither can push to `main` directly):
+  - **Repository admins** — an emergency escape hatch: `gh pr merge <n> --squash --admin` merges a PR with failing/pending checks (e.g. a hotfix while CI itself is broken). Use sparingly; the deploy still only happens if CI passes on `main` afterwards.
+  - **GitHub Actions** — needed by the weekly `Update Ruby and dependencies` workflow: it opens its PR with `GITHUB_TOKEN`, and GitHub doesn't trigger other workflows (so not CI) for events created by that token, so the required checks would never report on that PR. That workflow runs the same checks in its own `ci` job before merging instead. The same `GITHUB_TOKEN` limitation means its merge to `main` doesn't trigger CI (or therefore the deploy workflows) either — which is why it deploys Fly production and Azure itself.
+  - To change the rule: edit the JSON, then `gh api -X PUT repos/leclaist/continuation-azure/rulesets/$(gh api repos/leclaist/continuation-azure/rulesets --jq '.[] | select(.name=="Protect main") | .id') --input .github/rulesets/protect-main.json`. Renaming a CI job silently breaks merging (the old required check name never reports) — update the ruleset in the same PR.
 - **Smoke tests** are all `bin/smoke <base-url> [attempts] [sleep]` (also runnable locally, e.g. `bin/smoke http://localhost:3000`): waits for `/`, then follows real links home → earliest year → its first entry with one cookie jar, checking actual content (year list, `data-year` theme, non-empty entry), and a `Range` request for the entry's recording if it has one. Change smoke behavior there, not in the workflows.
 - **Nightly 08:00 UTC** (`.github/workflows/nightly-live-check.yml`, also `workflow_dispatch`): runs `bin/smoke` against all three sites, then `bin/rails live:check` (`lib/tasks/live.rake`) inside Fly production via `fly ssh console`, using production's own credentials and bypassing `Rails.cache`. It fails on: Drive auth/listing failure, an empty folder, a doc dated without a year (Date.parse would file it under the *current* year), two docs with the same date (second is unreachable), an empty export of the newest entry, a recording with no matching entry, a failed ranged fetch, or an invalid Anthropic key / retired `CommentGeneratorService::MODEL`. Undated docs (e.g. working notes) are only printed as a warning. Failure alerts via GitHub's failed-workflow notification.
 - **Dependabot PRs** auto-merge when CI passes

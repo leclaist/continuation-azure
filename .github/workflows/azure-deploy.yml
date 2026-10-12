@@ -1,36 +1,53 @@
 name: Deploy to Azure
 
+# Runs only after CI passes on a push to main — never in parallel with it, so a
+# commit with failing tests can't reach production.
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 jobs:
   deploy-azure:
     name: Deploy to Azure Container Apps
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     concurrency: deploy-azure
+    env:
+      # The exact commit CI tested (github.sha would be main's tip right now).
+      SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Skip if main has moved on
+        id: latest
+        run: bin/ci-is-latest-main "$SHA"
 
       - uses: azure/login@v2
+        if: steps.latest.outputs.latest == 'true'
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Build and push image to ACR
+        if: steps.latest.outputs.latest == 'true'
         run: |
           az acr build \
             --registry continuationacr \
-            --image continuation:${{ github.sha }} \
+            --image continuation:$SHA \
             --image continuation:latest \
             .
 
       - name: Deploy to Container Apps
+        if: steps.latest.outputs.latest == 'true'
         run: |
           az containerapp update \
             --name continuation \
             --resource-group continuation-rg \
-            --image continuationacr.azurecr.io/continuation:${{ github.sha }}
+            --image continuationacr.azurecr.io/continuation:$SHA
 
       - name: Smoke test
+        if: steps.latest.outputs.latest == 'true'
         run: bin/smoke https://christineclaymoreau.lol 10 15
