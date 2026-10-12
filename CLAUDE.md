@@ -16,7 +16,8 @@ Local dev runs entirely in Docker — no local Ruby/bundle install needed. `.env
 
 ```bash
 docker compose up                                # local dev server on http://localhost:3000
-docker compose exec web bin/rails test           # test suite
+docker compose exec web bin/rails test           # test suite (excludes system tests)
+docker compose exec web bin/rails test:system    # browser tests (Capybara + Cuprite/headless Chrome)
 docker compose exec web bin/brakeman --no-pager  # static security analysis
 docker compose exec web bin/bundler-audit        # CVE check
 git push                                         # triggers CI + auto-deploy to Fly
@@ -80,7 +81,7 @@ fly logs
 
 ## CI / automation
 
-- **CI** runs on every PR and push: Brakeman, bundler-audit, importmap audit, RuboCop, tests
+- **CI** runs on every PR and push: Brakeman, bundler-audit, importmap audit, RuboCop, tests, system tests (headless Chrome, preinstalled on the `ubuntu-latest` runner — see `.github/workflows/ci.yml`'s `system_test` job)
 - **Push/merge to `main`** triggers two independent deploy pipelines in parallel:
   - **Fly.io**: staging deploy → smoke test `continuation-staging.fly.dev` → production deploy
   - **Azure**: build image → deploy to Container Apps → smoke test `christineclaymoreau.lol`
@@ -108,6 +109,7 @@ fly logs
 - New controller action → add a test in `test/controllers/`
 - New model method or validation → add a test in `test/models/`
 - New helper method with logic → add a test in `test/helpers/`
+- New or changed JS/Stimulus interaction (a click actually doing the right thing in a real browser) → add a test in `test/system/`
 - Changed behaviour → update the corresponding test
 
 **Patterns in use:**
@@ -116,11 +118,13 @@ fly logs
 - Helpers: include the module directly in an `ActiveSupport::TestCase` subclass.
 - `with_env` in `EntriesControllerTest` is the pattern for temporarily setting ENV vars in a test.
 - Session/cookie round-trips: `test/integration/session_persistence_test.rb` makes two requests reusing the same session cookie, with forgery protection forced on via `setup`/`teardown` (`test.rb` disables it by default, which would otherwise skip the real encrypted-cookie decrypt path entirely). Use this pattern for anything touching session or cookie serialization.
+- System tests (`test/system/`, `ApplicationSystemTestCase`): real headless-Chrome browser tests via Capybara + Cuprite, run serially (`parallelize(workers: 1)` — forking around a spawned browser subprocess is unreliable). Same `GoogleDriveService.stub(:new, svc)` pattern as controller tests works here too, since Capybara's Puma server runs in-process. Driver options (timeouts, `browser_path`, Chrome flags) must be passed through `driven_by :cuprite, options: { ... }` in `application_system_test_case.rb` — Rails' `driven_by` re-registers the Capybara driver itself on every test (ignoring any separate `Capybara.register_driver` call), so options set any other way are silently dropped. `fake_drive_service`'s `audio_bytes:` keyword exists so audio-player tests can serve real decodable bytes (a generated silent WAV) instead of an arbitrary string — the browser only actually fires `play`/`pause` events for audio it can decode. Not parallelizable with the rest of the suite but otherwise run the same way.
 
 **After writing or editing any code or tests, always run:**
 ```bash
-docker compose exec web bin/rubocop -A   # auto-correct style issues
-docker compose exec web bin/rails test   # confirm nothing broke
+docker compose exec web bin/rubocop -A        # auto-correct style issues
+docker compose exec web bin/rails test        # confirm nothing broke
+docker compose exec web bin/rails test:system # if you touched test/system or JS controllers
 ```
 
 **What's intentionally not tested:**

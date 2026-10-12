@@ -93,3 +93,26 @@ jobs:
           # REDIS_URL: redis://localhost:6379/0
         run: bin/rails db:test:prepare test
 
+  system_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      # ubuntu-latest runners ship Google Chrome preinstalled for exactly this
+      # (see actions/runner-images) — no apt/snap install needed.
+      - name: Locate Chrome
+        id: chrome
+        run: echo "path=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)" >> "$GITHUB_OUTPUT"
+
+      - name: Run system tests
+        env:
+          RAILS_ENV: test
+          CUPRITE_CHROME_PATH: ${{ steps.chrome.outputs.path }}
+        run: bin/rails db:test:prepare test:system
