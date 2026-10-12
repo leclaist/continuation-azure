@@ -264,7 +264,7 @@ jobs:
         run: bin/smoke https://<custom domain or app FQDN> 10 15
 ```
 
-This workflow triggers only after CI passes on `main`, and deploys the exact commit CI tested (see CLAUDE.md's "Deploys are gated on CI" section).
+This workflow triggers only after CI passes on `main`, and deploys the exact commit CI tested (see CLAUDE.md's "Deploys are gated on CI" bullet).
 
 ### 12. Create the Azure service principal for GitHub Actions
 

@@ -44,7 +44,7 @@ Run `docker compose exec web bin/rails test` (`docker compose run --rm web bin/r
 
 ## 7. Report and commit
 - Run `git diff --stat` to show what changed
-- `main` is protected (see CLAUDE.md's "Branch protection" section): changes land through a pull request, and CI must pass before it can merge. Production deploys automatically once CI passes on `main`.
+- `main` is protected (see CLAUDE.md's "Branch protection" bullet): changes land through a pull request, and CI must pass before it can merge. Production deploys automatically once CI passes on `main`.
 - Branch: `git checkout -b chore/update-deps-$(date +%Y-%m-%d)`
 - Commit with: `git add .ruby-version Dockerfile Dockerfile.dev Gemfile Gemfile.lock && git commit -m "chore: update Ruby and gem dependencies"`
 - Push and open a PR: `git push -u origin HEAD && gh pr create --fill`

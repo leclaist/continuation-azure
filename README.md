@@ -185,7 +185,8 @@ After changing secrets via Terraform, restart the revision to pick them up (Azur
 
 - No direct pushes, force-pushes, or deletion of `main` — every change lands through a pull request.
 - A PR can't merge until CI passes: `scan_ruby`, `scan_js`, `lint`, `test`, `system_test`. No review approval is required.
-- Repository admins can force-merge a PR in an emergency (`gh pr merge <n> --squash --admin`); GitHub Actions can merge the weekly dependency PR, which runs its own CI job (see below).
+- Repository admins can force-merge a PR in an emergency (`gh pr merge <n> --squash --admin`). Nobody, including admins, can push to `main` directly.
+- The weekly dependency PR is opened by `GITHUB_TOKEN`, which doesn't trigger CI by itself, so that workflow dispatches CI on its branch and waits for the required checks before merging.
 
 ```bash
 git checkout -b my-change

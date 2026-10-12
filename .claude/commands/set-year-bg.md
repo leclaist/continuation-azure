@@ -66,7 +66,7 @@ Run `docker compose exec web bin/rails test` (`docker compose run --rm web bin/r
 
 ### 6. Commit and open a PR
 
-`main` is protected (see CLAUDE.md's "Branch protection" section): changes land through a pull request, and CI must pass before it can merge. Production deploys automatically once CI passes on `main`.
+`main` is protected (see CLAUDE.md's "Branch protection" bullet): changes land through a pull request, and CI must pass before it can merge. Production deploys automatically once CI passes on `main`.
 
 ```bash
 git checkout -b update-<year>-background

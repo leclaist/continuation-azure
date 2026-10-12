@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [ main ]
+  # The weekly dependency workflow dispatches CI on its PR branch: its PR is
+  # opened with GITHUB_TOKEN, which doesn't trigger pull_request workflows,
+  # so without this the checks main's ruleset requires would never report.
+  workflow_dispatch:
 
 jobs:
   scan_ruby:
