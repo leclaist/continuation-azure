@@ -213,49 +213,58 @@ If it does not exist, create `.github/workflows/azure-deploy.yml` with the follo
 ```yaml
 name: Deploy to Azure
 
+# Runs only after CI passes on a push to main — never in parallel with it.
 on:
   workflow_run:
-    workflows: ["Deploy"]
+    workflows: [CI]
     types: [completed]
     branches: [main]
 
 jobs:
   deploy-azure:
     name: Deploy to Azure Container Apps
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     concurrency: deploy-azure
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Skip if main has moved on
+        id: latest
+        run: bin/ci-is-latest-main "$SHA"
 
       - uses: azure/login@v2
+        if: steps.latest.outputs.latest == 'true'
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Build and push image to ACR
+        if: steps.latest.outputs.latest == 'true'
         run: |
           az acr build \
             --registry $ACR_NAME \
-            --image continuation:${{ github.sha }} \
+            --image continuation:$SHA \
             --image continuation:latest \
             .
 
       - name: Deploy to Container Apps
+        if: steps.latest.outputs.latest == 'true'
         run: |
           az containerapp update \
             --name $APP_NAME \
             --resource-group $RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/continuation:${{ github.sha }}
+            --image $ACR_NAME.azurecr.io/continuation:$SHA
 
-      - name: Get app URL
-        run: |
-          az containerapp show \
-            --name $APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --query properties.configuration.ingress.fqdn -o tsv
+      - name: Smoke test
+        if: steps.latest.outputs.latest == 'true'
+        run: bin/smoke https://<custom domain or app FQDN> 10 15
 ```
 
-This workflow triggers after the existing Fly.io deploy workflow succeeds — so Azure only gets updated after Fly staging is verified.
+This workflow triggers only after CI passes on `main`, and deploys the exact commit CI tested (see CLAUDE.md's "Deploys are gated on CI" bullet).
 
 ### 12. Create the Azure service principal for GitHub Actions
 

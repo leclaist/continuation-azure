@@ -99,14 +99,14 @@ bin/importmap audit       # JS dependency audit
 
 ### Fly.io
 
-Two environments, both deploying automatically on push to `main`:
+Two environments, both deploying automatically once CI passes on `main` (see [Release process](#release-process)):
 
 | Environment | URL | Machine |
 |---|---|---|
 | Staging | `https://continuation-staging.fly.dev` | 512MB, suspends when idle |
 | Production | `https://continuation.fly.dev` | 1GB, stops when idle |
 
-**Deploy pipeline** — staging deploys first, then a smoke test polls the staging URL until it returns HTTP 200, then checks `/2008` (the earliest year) reusing that same session cookie. A fresh, cookie-less request alone isn't enough — a past incident (see below) only broke requests carrying an *existing* session cookie, so the smoke test deliberately exercises that path. If it passes, production deploys. If it fails, production is not touched.
+**Deploy pipeline** — staging deploys first, then `bin/smoke` polls the staging URL until it returns HTTP 200 and walks home → earliest year → an entry (and its recording, if any), reusing that same session cookie. A fresh, cookie-less request alone isn't enough — a past incident (see below) only broke requests carrying an *existing* session cookie, so the smoke test deliberately exercises that path. If it passes, production deploys. If it fails, production is not touched.
 
 ```bash
 # Staging
@@ -124,7 +124,7 @@ SQLite data is stored on a persistent Fly volume (`/data`) in each environment. 
 
 ### Azure Container Apps
 
-The production deployment. Deploys automatically on push to `main` via `azure-deploy.yml` — builds a new image in ACR, deploys it to Container Apps, and smoke tests the live URL.
+The production deployment. Deploys automatically once CI passes on `main` via `azure-deploy.yml` — builds a new image in ACR, deploys it to Container Apps, and smoke tests the live URL.
 
 | | |
 |---|---|
@@ -179,16 +179,41 @@ After changing secrets via Terraform, restart the revision to pick them up (Azur
 
 **Thruster port config** — the container runs as a non-root user, so Thruster cannot bind to port 80. It listens on port 3000 (`HTTP_PORT=3000`) and proxies internally to Puma on port 3001 (`TARGET_PORT=3001`). The Container Apps ingress routes to port 3000.
 
+## Release process
+
+`main` is protected by a repository ruleset (`.github/rulesets/protect-main.json`):
+
+- No direct pushes, force-pushes, or deletion of `main` — every change lands through a pull request.
+- A PR can't merge until CI passes: `scan_ruby`, `scan_js`, `lint`, `test`, `system_test`. No review approval is required.
+- Repository admins can force-merge a PR in an emergency (`gh pr merge <n> --squash --admin`). Nobody, including admins, can push to `main` directly.
+- The weekly dependency PR is opened by `GITHUB_TOKEN`, which doesn't trigger CI by itself, so that workflow dispatches CI on its branch and waits for the required checks before merging.
+
+```bash
+git checkout -b my-change
+# ...edit, commit...
+git push -u origin my-change
+gh pr create --fill
+gh pr checks --watch                   # wait for CI
+gh pr merge --squash --delete-branch
+```
+
+Merging starts CI on `main`. **Deploys start only after that CI run passes** — `fly-deploy.yml` and `azure-deploy.yml` trigger on CI completing (`workflow_run`), not on the push itself, and deploy the exact commit CI tested. If another commit has landed on `main` in the meantime, the older run skips its deploy and the newer commit's run deploys instead, so production never moves backwards.
+
+```
+PR ──CI──▶ merge ──▶ CI on main ──pass──┬─▶ Fly staging ─▶ smoke ─▶ Fly production
+                                        └─▶ Azure build ─▶ deploy ─▶ smoke
+```
+
 ## CI / dependency automation
 
-**CI** runs on every PR and push to `main`: Brakeman, bundler-audit, importmap audit, RuboCop, and the test suite.
+**CI** runs on every PR and push to `main`: Brakeman, bundler-audit, importmap audit, RuboCop, the test suite, and browser system tests. Its passing is required to merge a PR and to deploy.
 
 **Dependabot** opens weekly PRs for gem and GitHub Actions updates. These are automatically approved and squash-merged once CI passes.
 
 **Weekly dependency update** (`Update Ruby and dependencies` workflow, Mondays 9am UTC) — checks for CVEs in current gems, updates `.ruby-version` to the latest stable Ruby, runs `bundle update --all`, re-checks for CVEs, then decides whether it's safe to ship automatically:
 
 - It diffs `Gemfile.lock` before/after the update to catch any gem crossing a major version boundary. This isn't theoretical: an update once bumped `json` 2.x → 3.0, which changed `JSON.parse`'s signature and broke decrypting an *existing* session cookie — every repeat visit 500'd while a fresh visit looked fine, until it was pinned back with `gem "json", "< 3"`.
-- **No major bump** → normal path: CI (Brakeman, bundler-audit, importmap audit, RuboCop, tests) → deploy to Fly staging → smoke test (`/` then `/2008`, reusing the session cookie — exactly what would have caught the `json` incident) → auto-merge to `main` → the normal production deploy pipelines above.
+- **No major bump** → normal path: CI (Brakeman, bundler-audit, importmap audit, RuboCop, tests) → deploy to Fly staging → smoke test (`bin/smoke`, reusing one session cookie — exactly what would have caught the `json` incident) → deploy Fly production → merge to `main` → deploy Azure. (It deploys production itself because its merge is made with `GITHUB_TOKEN`, which doesn't trigger CI or the normal deploy workflows.)
 - **Major bump on a gem that isn't already an explicit `Gemfile` dependency** → auto-remediates: pins that gem below the new major version and reruns the update. If it now resolves cleanly, proceeds through the normal path above with a note in the PR about what got pinned and why.
 - **Major bump on an already-explicit dependency, or remediation doesn't resolve** → skips auto-merge and the production deploy (staging still deploys, for visibility). The PR is labeled `needs-review` and assigned with a review request — no separate alerting service, just GitHub's own notifications.
 
