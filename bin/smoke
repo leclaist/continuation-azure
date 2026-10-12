@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Post-deploy smoke test: walks a deployed site the way a visitor would and
+# checks that real content comes back, not just a 200.
+#
+#   bin/smoke https://continuation-staging.fly.dev [attempts] [sleep_seconds]
+#
+# 1. Waits for / to return 200 (machines may be cold-starting).
+# 2. / lists at least one year.
+# 3. The earliest year's page renders with its theme and lists entries.
+# 4. That year's first entry renders its Drive content.
+# 5. If that entry has a recording, a Range request for it gets a 206 with an
+#    audio content type (the path Safari needs to play at all).
+#
+# Every request reuses one cookie jar, so steps 2+ decrypt an existing session
+# cookie rather than starting fresh — that's what caught the json 3.x
+# incompatibility (see CLAUDE.md).
+set -euo pipefail
+
+base="${1:?usage: bin/smoke BASE_URL [attempts] [sleep_seconds]}"
+base="${base%/}"
+attempts="${2:-10}"
+pause="${3:-10}"
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cookies="$work/cookies"
+body="$work/body"
+headers="$work/headers"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+# fetch PATH [extra curl args...] → sets $status; body in $body, headers in $headers
+fetch() {
+  local path="$1"; shift
+  status=$(curl -s -o "$body" -D "$headers" -w "%{http_code}" --max-time 60 \
+    -c "$cookies" -b "$cookies" "$@" "$base$path" || true)
+  status="${status:-000}"
+  echo "GET $path: HTTP $status"
+}
+
+echo "Waiting for $base to respond..."
+for i in $(seq 1 "$attempts"); do
+  fetch /
+  [ "$status" = "200" ] && break
+  [ "$i" -lt "$attempts" ] && sleep "$pause"
+done
+[ "$status" = "200" ] || fail "/ did not return 200 after $attempts attempts"
+
+year_path=$(grep -o 'href="/[0-9]\{4\}"' "$body" | head -1 | sed 's/href="\(.*\)"/\1/' || true)
+[ -n "$year_path" ] || fail "/ lists no years — Drive returned no entries?"
+grep -q 'visitor-counter' "$body" || fail "/ is missing the visitor counter"
+year="${year_path#/}"
+
+fetch "$year_path"
+[ "$status" = "200" ] || fail "$year_path returned $status"
+grep -q "data-year=\"$year\"" "$body" || fail "$year_path is missing its data-year theme attribute"
+
+entry_path=$(grep -o "href=\"/$year/[^\"]*\"" "$body" | head -1 | sed 's/href="\(.*\)"/\1/' || true)
+[ -n "$entry_path" ] || fail "$year_path lists no entries"
+
+fetch "$entry_path"
+[ "$status" = "200" ] || fail "$entry_path returned $status"
+grep -q 'class="doc-content"' "$body" || fail "$entry_path is missing its content"
+content=$(grep -A50 'class="doc-content"' "$body" | sed 's/<[^>]*>//g' | tr -d '[:space:]')
+[ -n "$content" ] || fail "$entry_path rendered an empty entry"
+
+audio_path=$(grep -o 'data-audio-player-src-value="[^"]*"' "$body" | head -1 | sed 's/.*="\(.*\)"/\1/' || true)
+if [ -n "$audio_path" ]; then
+  fetch "$audio_path" -H "Range: bytes=0-1"
+  [ "$status" = "206" ] || fail "$audio_path Range request returned $status, expected 206"
+  grep -qi '^content-type: audio/' "$headers" || fail "$audio_path did not return an audio content type"
+else
+  echo "($entry_path has no recording — skipping audio check)"
+fi
+
+echo "OK: $base is healthy"

@@ -1,0 +1,42 @@
+name: Nightly live check
+
+# Exercises the real deployed sites and their real dependencies (Google Drive,
+# Anthropic) every night, so a revoked Drive share, rotated key, retired model,
+# or bad file in the Drive folder is caught before a visitor finds it. A
+# failure here alerts via GitHub's normal failed-workflow notification.
+on:
+  schedule:
+    - cron: "0 8 * * *" # 08:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Smoke ${{ matrix.site }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - https://continuation.fly.dev
+          - https://continuation-staging.fly.dev
+          - https://christineclaymoreau.lol
+    steps:
+      - uses: actions/checkout@v6
+      - run: bin/smoke ${{ matrix.site }} 10 15
+
+  live-dependencies:
+    name: Drive + Anthropic (inside Fly production)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Run live:check in production
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # Machines auto-stop when idle; a request wakes one so there's
+          # something to SSH into.
+          curl -s -o /dev/null --max-time 60 https://continuation.fly.dev/ || true
+          # Grep for the sentinel rather than trusting `fly ssh console` to
+          # propagate the remote exit status.
+          flyctl ssh console --app continuation --command "/rails/bin/rails live:check" | tee output.txt
+          grep -q "LIVE CHECK PASSED" output.txt

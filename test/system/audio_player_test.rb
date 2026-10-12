@@ -6,12 +6,15 @@ class AudioPlayerTest < ApplicationSystemTestCase
   end
 
   test "clicking the toggle button plays, then pauses, the recording" do
-    audio_file = OpenStruct.new(id: "fake-audio-id", mime_type: "audio/wav")
+    # Includes size, like a real Drive file, so Chrome's Range requests get
+    # real 206 responses — the same path Safari depends on to play at all.
+    wav = silent_wav_bytes
+    audio_file = OpenStruct.new(id: "fake-audio-id", mime_type: "audio/wav", size: wav.bytesize)
     svc = fake_drive_service(
       by_slug: @entry,
       html: "<p>hello</p>",
       audio: audio_file,
-      audio_bytes: silent_wav_bytes
+      audio_bytes: wav
     )
 
     GoogleDriveService.stub(:new, svc) do

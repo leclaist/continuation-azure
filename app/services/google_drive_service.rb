@@ -32,18 +32,21 @@ class GoogleDriveService
     files_for_year(year).find { |e| e.slug == slug }
   end
 
-  # Returns just the <body> HTML of the exported doc
-  def content_html(file_id)
-    Rails.cache.fetch("drive/file/#{file_id}", expires_in: 1.hour) do
+  # Returns just the <body> HTML of the exported doc. `fresh: true` bypasses
+  # (and refreshes) the cache — used by the nightly live check.
+  def content_html(file_id, fresh: false)
+    Rails.cache.fetch("drive/file/#{file_id}", expires_in: 1.hour, force: fresh) do
       io = StringIO.new
       @drive.export_file(file_id, "text/html", download_dest: io)
       extract_body(io.string)
     end
   end
 
-  # { "mar-12-2026" => AudioFile(id:, mime_type:), ... }
+  # { "mar-12-2026" => AudioFile(id:, mime_type:, size:), ... }
+  # Key is versioned because AudioFile's members changed — a Marshal'd struct
+  # with the old members can't be loaded back into the new one.
   def audio_by_slug
-    Rails.cache.fetch("drive/audio_by_slug", expires_in: 1.hour) do
+    Rails.cache.fetch("drive/audio_by_slug/v2", expires_in: 1.hour) do
       list_audio_files
         .index_by { |f| File.basename(f.name, ".*").downcase }
         .transform_values { |f| build_audio_file(f) }
@@ -55,9 +58,11 @@ class GoogleDriveService
   end
 
   # Streams a Drive file's bytes to the given block as they arrive over the
-  # wire, rather than buffering the whole file in memory.
-  def stream_audio(file_id, &block)
-    @drive.get_file(file_id, download_dest: ChunkWriter.new(&block))
+  # wire, rather than buffering the whole file in memory. `range` (an inclusive
+  # Integer Range) asks Drive for just those bytes.
+  def stream_audio(file_id, range: nil, &block)
+    options = range && { header: { "Range" => "bytes=#{range.first}-#{range.last}" } }
+    @drive.get_file(file_id, download_dest: ChunkWriter.new(&block), options: options)
   end
 
   def total_word_count
@@ -82,7 +87,7 @@ class GoogleDriveService
   private
 
   Entry = Struct.new(:id, :name, :date, :year, :slug, keyword_init: true)
-  AudioFile = Struct.new(:id, :mime_type, keyword_init: true)
+  AudioFile = Struct.new(:id, :mime_type, :size, keyword_init: true)
 
   class ChunkWriter
     def initialize(&block)
@@ -117,14 +122,14 @@ class GoogleDriveService
   end
 
   def build_audio_file(file)
-    AudioFile.new(id: file.id, mime_type: file.mime_type)
+    AudioFile.new(id: file.id, mime_type: file.mime_type, size: file.size&.to_i)
   end
 
   def list_audio_files
     mime_clause = AUDIO_MIME_TYPES.map { |type| "mimeType = '#{type}'" }.join(" or ")
     result = @drive.list_files(
       q: "'#{FOLDER_ID}' in parents and trashed = false and (#{mime_clause})",
-      fields: "files(id, name, mimeType)",
+      fields: "files(id, name, mimeType, size)",
       page_size: 1000
     )
     result.files || []

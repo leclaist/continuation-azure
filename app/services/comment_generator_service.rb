@@ -2,6 +2,8 @@ require "anthropic"
 require "nokogiri"
 
 class CommentGeneratorService
+  MODEL = :"claude-haiku-4-5-20251001"
+
   YEAR_VOICE = {
     2008 => {
       style: "MySpace-era internet culture (2008). Use AIM-style usernames like xXdarkrose14Xx or skaterdude42. "\
@@ -77,7 +79,7 @@ class CommentGeneratorService
     PROMPT
 
     response = @client.messages.create(
-      model: :"claude-haiku-4-5-20251001",
+      model: MODEL,
       max_tokens: 3000,
       messages: [ { role: "user", content: prompt } ]
     )
@@ -85,12 +87,14 @@ class CommentGeneratorService
     text = response.content.find { |b| b.type == :text }&.text || "{}"
     text = text.gsub(/\A```(?:json)?\s*|\s*```\z/, "").strip
     data = JSON.parse(text)
+    return [] unless data.is_a?(Hash)
+
     apply_commenter_updates(data["commenters"] || [])
     data["comments"] || []
   rescue JSON::ParserError => e
     Rails.logger.error("CommentGeneratorService error: #{e.message}")
     []
-  rescue Anthropic::Error => e
+  rescue Anthropic::Errors::Error => e
     Rails.logger.error("CommentGeneratorService error: #{e.message}")
     []
   end
