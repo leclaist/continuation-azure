@@ -10,8 +10,12 @@ WORKDIR /rails
 
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
-      build-essential curl git libjemalloc2 libvips libyaml-dev pkg-config sqlite3 && \
+      build-essential curl git libjemalloc2 libvips libyaml-dev pkg-config sqlite3 \
+      chromium && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Cuprite (system tests) drives this directly over CDP — no chromedriver needed.
+ENV CUPRITE_CHROME_PATH="/usr/bin/chromium"
 
 RUN gem update --system --no-document && gem install -N bundler
 
