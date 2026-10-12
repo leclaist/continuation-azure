@@ -23,8 +23,8 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
     browser_options: { "no-sandbox" => nil, "disable-gpu" => nil, "disable-dev-shm-usage" => nil }
   }
 
-  # Capybara's 2s default wait can be too tight for a click that has to round-trip
-  # through actually decoding and starting audio playback, especially on a cold
-  # CI runner.
+  # A general safety margin for a cold/loaded CI runner — assertions that
+  # depend on something riskier than a plain DOM update (e.g. a real network
+  # round trip) should still wait longer explicitly rather than lean on this.
   Capybara.default_max_wait_time = 5
 end

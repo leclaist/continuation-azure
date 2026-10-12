@@ -22,11 +22,13 @@ class AudioPlayerTest < ApplicationSystemTestCase
       assert_selector ".audio-player__icon", text: "▶"
 
       toggle.click
+      wait_for_audio_state(playing: true)
 
       assert_selector ".audio-player__toggle[aria-label='Pause recording']"
       assert_selector ".audio-player__icon", text: "⏸"
 
       toggle.click
+      wait_for_audio_state(playing: false)
 
       assert_selector ".audio-player__toggle[aria-label='Play recording']"
       assert_selector ".audio-player__icon", text: "▶"
@@ -34,6 +36,50 @@ class AudioPlayerTest < ApplicationSystemTestCase
   end
 
   private
+
+  # Waits for the Stimulus controller's actual <audio> element to reach the
+  # given playing/paused state, rather than polling the DOM text Capybara's
+  # normal assert_selector would. The controller builds `new Audio(...)`
+  # detached from the DOM, so it's reached via the Stimulus registry, not a
+  # CSS selector. On timeout this surfaces the audio element's real state
+  # (readyState, networkState, error) instead of a bare "no matches" failure,
+  # since a plain DOM-polling wait gave no signal about *why* it was still
+  # waiting when this flaked in CI (see git history on this file).
+  def wait_for_audio_state(playing:, timeout: 15)
+    result = page.driver.browser.page.evaluate_async(<<~JS, timeout)
+      const done = arguments[0]
+      const wantPlaying = #{playing}
+      const el = document.querySelector('[data-controller="audio-player"]')
+      const controller = window.Stimulus.getControllerForElementAndIdentifier(el, "audio-player")
+      const deadline = Date.now() + #{timeout * 1000 - 500}
+
+      const check = () => {
+        const audio = controller && controller.audio
+        const isPlaying = !!audio && !audio.paused && !audio.ended && audio.currentTime > 0
+
+        if (isPlaying === wantPlaying) {
+          done({ ok: true })
+        } else if (Date.now() > deadline) {
+          done({
+            ok: false,
+            hasController: !!controller,
+            hasAudio: !!audio,
+            paused: audio && audio.paused,
+            currentTime: audio && audio.currentTime,
+            readyState: audio && audio.readyState,
+            networkState: audio && audio.networkState,
+            errorCode: audio && audio.error && audio.error.code,
+            errorMessage: audio && audio.error && audio.error.message
+          })
+        } else {
+          setTimeout(check, 50)
+        }
+      }
+      check()
+    JS
+
+    assert result["ok"], "audio did not reach playing=#{playing} within #{timeout}s: #{result.inspect}"
+  end
 
   # A minimal, genuinely decodable WAV file (silence) — the controller builds
   # a real <audio> element around the streamed bytes, so playback only
