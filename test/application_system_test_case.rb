@@ -22,4 +22,9 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
     # disable-dev-shm-usage makes it fall back to disk-backed temp files.
     browser_options: { "no-sandbox" => nil, "disable-gpu" => nil, "disable-dev-shm-usage" => nil }
   }
+
+  # Capybara's 2s default wait can be too tight for a click that has to round-trip
+  # through actually decoding and starting audio playback, especially on a cold
+  # CI runner.
+  Capybara.default_max_wait_time = 5
 end
