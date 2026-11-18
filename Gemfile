@@ -43,3 +43,7 @@ group :test do
   gem "capybara"
   gem "cuprite"
 end
+
+# Auto-pinned by the weekly dependency update after bundle update tried to
+# jump a major version. Review the new major and remove this pin when ready.
+gem "prism", "< 2"
